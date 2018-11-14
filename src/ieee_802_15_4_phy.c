@@ -39,16 +39,24 @@ uint8_t phyCCAMode;
 
 voidFuncPtr DataRequestCallback = NULL;
 voidFuncPtr DataConfirmCallback = NULL;
+IEEE_802_15_4_PHY_Enum_t DataConfirmation = IDLE;
 voidFuncPtr DataIndicationCallback = NULL;
 
 voidFuncPtr CcaRequestCallback = NULL;
 voidFuncPtr CcaConfirmCallback = NULL;
+IEEE_802_15_4_PHY_Enum_t CcaConfirmation = IDLE;
+
 voidFuncPtr EdRequestCallback = NULL;
 voidFuncPtr EdConfirmCallback = NULL;
+IEEE_802_15_4_PHY_Enum_t EdConfirmation = IDLE;
+
 voidFuncPtr GetRequestCallback = NULL;
 voidFuncPtr GetConfirmCallback = NULL;
+IEEE_802_15_4_PHY_Enum_t GetConfirmation = IDLE;
+
 voidFuncPtr SetTrxStateRequestCallback = NULL;
 voidFuncPtr SetTrxStateConfirmCallback = NULL;
+IEEE_802_15_4_PHY_Enum_t SetTrxStateConfirmation = IDLE;
 
 void (*SetPhyChannelCallback)(uint8_t) = NULL;
 void (*SetSupportedChannelsCallback)(uint32_t) = NULL;
@@ -79,6 +87,7 @@ static void IEEE_802_15_4_PhyDataRequest(uint8_t psduLength, IEEE_802_15_4_PSDU_
     if (DataRequestCallback != NULL){
         DataRequestCallback();
     }
+    DataConfirmation = SUCCESS;
 }
 
 
@@ -97,7 +106,7 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_PhyDataConfirm(void)
     {
         DataConfirmCallback();
     }
-    return IDLE;
+    return DataConfirmation;
 }
 
 
@@ -134,6 +143,7 @@ static void IEEE_802_15_4_CCA_Request(void)
     {
         CcaRequestCallback();
     }
+    CcaConfirmation = SUCCESS;
 }
 
 
@@ -152,7 +162,7 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_CCA_Confirm(void)
     {
         CcaConfirmCallback();
     }
-    return IDLE;
+    return CcaConfirmation;
 }
 
 
@@ -171,6 +181,7 @@ static void IEEE_802_15_4_ED_Request(void)
     {
         EdRequestCallback();
     }
+    EdConfirmation = SUCCESS;
 }
 
 
@@ -189,7 +200,7 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_ED_Confirm(uint8_t* EnergyLevel)
     {
         EdConfirmCallback();
     }
-    return IDLE;
+    return EdConfirmation;
 }
 
 
@@ -208,6 +219,7 @@ static void IEEE_802_15_4_GET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID)
     {
         GetRequestCallback();
     }
+    GetConfirmation = SUCCESS;
 }
 
 
@@ -226,7 +238,7 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_GET_Confirm(IEEE_802_15_4_PIB_ID_t
     {
         GetConfirmCallback();
     }
-    return IDLE;
+    return GetConfirmation;
 }
 
 
@@ -245,6 +257,7 @@ static void IEEE_802_15_4_SET_TRX_STATE_Request(IEEE_802_15_4_PHY_Enum_t* status
     {
         SetTrxStateRequestCallback();
     }
+    SetTrxStateConfirmation = SUCCESS;
 }
 
 
@@ -263,7 +276,7 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_SET_TRX_STATE_Confirm(void)
     {
         SetTrxStateConfirmCallback();
     }
-    return IDLE;
+    return SetTrxStateConfirmation;
 }
 
 
@@ -292,6 +305,7 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
                 {
                     phyCurrentChannel = *PIBAttributeValue;
                     SetPhyChannelCallback(phyCurrentChannel);
+                    SetConfirmation = SUCCESS;
                 }
                 else
                 {
@@ -311,6 +325,7 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
         {
             phyChannelsSupported.value = (1<<(uint8_t)*PIBAttributeValue);
             SetSupportedChannelsCallback(phyChannelsSupported.value);
+            SetConfirmation = SUCCESS;
         }
         else
         {
@@ -324,6 +339,7 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
             {
                 phyTransmitPower.value = (uint8_t)*PIBAttributeValue;
                 SetTransmitPowerCallback(phyTransmitPower.value);
+                SetConfirmation = SUCCESS;
             }
             else
             {
@@ -339,6 +355,7 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
             {
                 phyCCAMode = *PIBAttributeValue;
                 SetCCAModeCallback(phyCCAMode);
+                SetConfirmation = SUCCESS;
             }
             else
             {
