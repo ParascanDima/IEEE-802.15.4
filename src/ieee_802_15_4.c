@@ -1,7 +1,7 @@
 /*
  * ieee_802_15_4.c
  *
- *  Created on: 25 сент. 2018 г.
+ *  Created on: 25 пїЅпїЅпїЅпїЅ. 2018 пїЅ.
  *      Author: Dumitru
  */
 
@@ -39,7 +39,7 @@
 
 /**************Public Function Definitions***************/
 
-
+#ifdef IS_FINISHED
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_GetMPDU
  *!< @brief                  : Parse buffer according to MPDU description
@@ -193,3 +193,4 @@ IEEE_802_15_4_PPDU_t IEEE_802_15_4_GetMPDU(uint8_t* source, uint8_t frameLength)
     COPY_BYTES_TO(Rx.lqi, 1, payloadAddr+Rx.payloadLength+2);
     COPY_BYTES_TO(Rx.rssi, 1, payloadAddr+Rx.payloadLength+2+1);
 }
+#endif

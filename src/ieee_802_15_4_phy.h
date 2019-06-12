@@ -17,12 +17,6 @@
 
 /***************************Public Macro Definitions********************************/
 
-/*!<
- *!< @brief PHY constants
- *!< */
-#define aMaxPHYPacketSize                               127
-#define aTurnaroundTime                                 12
-
 #ifdef IEEE_802_15_4_2011_COMPLIANT
 /*!<
  *!< @brief PHY PIB attributes number (per IEEE Std 802.15.4-2011 Table 71)
@@ -132,7 +126,7 @@ typedef struct{
  *!< */
 typedef enum
 {
-    BUSY = 0x00,                 /* The CCA attempt has detected a busy channel.                                                   */
+    CHANNEL_BUSY = 0x00,                 /* The CCA attempt has detected a busy channel.                                                   */
     BUSY_RX = 0x01,              /* The transceiver is asked to change its state while receiving.                                  */
     BUSY_TX = 0x02,              /* The transceiver is asked to change its state while transmitting.                               */
     FORCE_TRX_OFF = 0x03,        /* The transceiver is to be switched off.                                                         */
@@ -274,7 +268,7 @@ typedef struct
 /*!<
  *!< @brief PLME-SET-TRX-STATE.request type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-SET-TRX-STATE))
  *!< */
-typedef void (*PLME_SET_TRX_STATE_Request_t)(IEEE_802_15_4_PHY_Enum_t* status);
+typedef void (*PLME_SET_TRX_STATE_Request_t)(IEEE_802_15_4_PHY_Enum_t status);
 
 
 /*!<
@@ -413,7 +407,7 @@ extern void IEEE_802_15_4_PhyInit(void);
  *!< Return                  : -
  *!< Critical section YES/NO : NO
  */
-extern void IEEE_802_15_4_BindService(uint8_t serviceId, IEEE_802_15_4_Service_t serviceType, void (*func)(void));
+extern void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEEE_802_15_4_Service_t serviceType, void (*func)(void));
 
 
 

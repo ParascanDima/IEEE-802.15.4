@@ -1,7 +1,7 @@
 /*
  * ieee_802_15_4_phy.c
  *
- *  Created on: 8 окт. 2018 г.
+ *  Created on: 8 пїЅпїЅпїЅ. 2018 пїЅ.
  *      Author: Dumitru
  */
 
@@ -12,9 +12,6 @@
 
 /**************Private Macro Definitions*****************/
 
-#ifndef NULL
-#define NULL ((void*)0)
-#endif
 
 #define IS_CHANNEL_SUPPORTED(x)    (((1<<((uint8_t)x)) & phyChannelsSupported.value) != 0)
 
@@ -35,6 +32,13 @@ IEEE_802_15_4_PhyTxPower_t phyTransmitPower;
 
 /*  PHY PIB attribute */
 uint8_t phyCCAMode;
+
+
+/*!<
+ *!< @brief PHY constants
+ *!< */
+const uint8_t aMaxPHYPacketSize = 127;
+const uint8_t aTurnaroundTime = 12;
 
 
 voidFuncPtr DataRequestCallback = NULL;
@@ -65,7 +69,7 @@ void (*SetCCAModeCallback)(uint8_t) = NULL;
 
 voidFuncPtr SetRequestCallback = NULL;
 voidFuncPtr SetConfirmCallback = NULL;
-
+IEEE_802_15_4_PHY_Enum_t SetConfirmation = IDLE;
 
 /**************Public Variable Definitions***************/
 
@@ -75,9 +79,11 @@ IEEE_802_15_4_PHY_t phyMain;
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_PhyDataRequest
- *!< @brief                  :
+ *!< @brief                  : Requests the transfer of an MPDU (i.e., PSDU) from the MAC
+ *!<                         : sublayer to the local PHY entity (per IEEE Std 802.15.4-2003   6.2.1.1 PD-DATA.request)
  *!< Parameters              :
- *!<                   Input : -
+ *!<                   Input : psduLength - The number of octets contained in the PSDU to be transmitted by the PHY entity.
+ *!<                         : psdu - The set of octets forming the PSDU to be transmitted by the PHY entity.
  *!<                   Output: -
  *!< Return                  : -
  *!< Critical section YES/NO : NO
@@ -93,11 +99,13 @@ static void IEEE_802_15_4_PhyDataRequest(uint8_t psduLength, IEEE_802_15_4_PSDU_
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_PhyDataConfirm
- *!< @brief                  :
+ *!< @brief                  : Confirms the end of the transmission of an MPDU (i.e., PSDU) from a
+ *!<                         : local MAC sublayer entity to a peer MAC sublayer entity
+ *!<                         : (per IEEE Std 802.15.4-2003   6.2.1.2 PD-DATA.confirm)
  *!< Parameters              :
  *!<                   Input : -
  *!<                   Output: -
- *!< Return                  : -
+ *!< Return                  : The result of the request to transmit a packet.
  *!< Critical section YES/NO : NO
  */
 static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_PhyDataConfirm(void)
@@ -112,9 +120,12 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_PhyDataConfirm(void)
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_PhyDataIndication
- *!< @brief                  :
+ *!< @brief                  : Indicates the transfer of an MPDU (i.e., PSDU) from the PHY to the
+ *!<                         : local MAC sublayer entity (per IEEE Std 802.15.4-2003   6.2.1.3 PD-DATA.indication)
  *!< Parameters              :
- *!<                   Input : -
+ *!<                   Input : psduLength - The number of octets contained in the PSDU received by the PHY entity.
+ *!<                         : psdu - The set of octets forming the PSDU received by the PHY entity
+ *!<                         : ppduLinkQuality - Link quality (LQ) value measured during reception of the PPDU.
  *!<                   Output: -
  *!< Return                  : -
  *!< Critical section YES/NO : NO
@@ -130,7 +141,7 @@ static void IEEE_802_15_4_PhyDataIndication(uint8_t psduLength, uint8_t* psdu, u
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_CCA_Request
- *!< @brief                  :
+ *!< @brief                  : Requests that the PLME perform a CCA.
  *!< Parameters              :
  *!<                   Input : -
  *!<                   Output: -
@@ -149,11 +160,11 @@ static void IEEE_802_15_4_CCA_Request(void)
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_CCA_Confirm
- *!< @brief                  :
+ *!< @brief                  : Reports the results of a CCA.
  *!< Parameters              :
  *!<                   Input : -
  *!<                   Output: -
- *!< Return                  : -
+ *!< Return                  : The result of the request to perform a CCA.
  *!< Critical section YES/NO : NO
  */
 static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_CCA_Confirm(void)
@@ -168,7 +179,7 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_CCA_Confirm(void)
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_ED_Request
- *!< @brief                  :
+ *!< @brief                  : Requests that the PLME perform an ED measurement.
  *!< Parameters              :
  *!<                   Input : -
  *!<                   Output: -
@@ -187,11 +198,11 @@ static void IEEE_802_15_4_ED_Request(void)
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_ED_Confirm
- *!< @brief                  :
+ *!< @brief                  : Reports the results of the ED measurement.
  *!< Parameters              :
- *!<                   Input : -
+ *!<                   Input : EnergyLevel - ED level for the current channel
  *!<                   Output: -
- *!< Return                  : -
+ *!< Return                  : The result of the request to perform an ED measurement.
  *!< Critical section YES/NO : NO
  */
 static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_ED_Confirm(uint8_t* EnergyLevel)
@@ -206,9 +217,9 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_ED_Confirm(uint8_t* EnergyLevel)
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_GET_Request
- *!< @brief                  :
+ *!< @brief                  : Requests information about a given PHY PIB attribute.
  *!< Parameters              :
- *!<                   Input : -
+ *!<                   Input : PIBAttribID - The identifier of the PHY PIB attribute to get.
  *!<                   Output: -
  *!< Return                  : -
  *!< Critical section YES/NO : NO
@@ -227,9 +238,10 @@ static void IEEE_802_15_4_GET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID)
  *!< Function                : IEEE_802_15_4_GET_Confirm
  *!< @brief                  :
  *!< Parameters              :
- *!<                   Input : -
+ *!<                   Input : PIBAttribID - The identifier of the PHY PIB attribute to get.
+ *!<                         : PIBAttributeValue - The value of the indicated PHY PIB attribute to get.
  *!<                   Output: -
- *!< Return                  : -
+ *!< Return                  : The result of the request for PHY PIB attribute information.
  *!< Critical section YES/NO : NO
  */
 static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_GET_Confirm(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_t* PIBAttributeValue)
@@ -244,14 +256,14 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_GET_Confirm(IEEE_802_15_4_PIB_ID_t
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_SET_TRX_STATE_Request
- *!< @brief                  :
+ *!< @brief                  : Requests that the PHY entity change the internal operating state of the transceiver.
  *!< Parameters              :
- *!<                   Input : -
+ *!<                   Input : state - The new state in which to configure the transceiver
  *!<                   Output: -
  *!< Return                  : -
  *!< Critical section YES/NO : NO
  */
-static void IEEE_802_15_4_SET_TRX_STATE_Request(IEEE_802_15_4_PHY_Enum_t* status)
+static void IEEE_802_15_4_SET_TRX_STATE_Request(IEEE_802_15_4_PHY_Enum_t state)
 {
     if (SetTrxStateRequestCallback != NULL)
     {
@@ -263,11 +275,12 @@ static void IEEE_802_15_4_SET_TRX_STATE_Request(IEEE_802_15_4_PHY_Enum_t* status
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_SET_TRX_STATE_Confirm
- *!< @brief                  :
+ *!< @brief                  : Reports the result of a request to change the internal operating state of
+ *!<                         : the transceiver.
  *!< Parameters              :
  *!<                   Input : -
  *!<                   Output: -
- *!< Return                  : -
+ *!< Return                  : The result of the request to change the state of the transceiver.
  *!< Critical section YES/NO : NO
  */
 static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_SET_TRX_STATE_Confirm(void)
@@ -282,9 +295,11 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_SET_TRX_STATE_Confirm(void)
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_SET_Request
- *!< @brief                  :
+ *!< @brief                  : Is generated by the MLME and issued to its PLME to write the indicated
+ *!<                         : PHY PIB attribute.
  *!< Parameters              :
- *!<                   Input : -
+ *!<                   Input : PIBAttribID - The identifier of the PIB attribute to set.
+ *!<                         : PIBAttributeValue - The value of the indicated PIB attribute to set.
  *!<                   Output: -
  *!< Return                  : -
  *!< Critical section YES/NO : NO
@@ -373,11 +388,11 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_SET_Confirm
- *!< @brief                  :
+ *!< @brief                  : Reports the results of the attempt to set a PIB attribute.
  *!< Parameters              :
- *!<                   Input : -
+ *!<                   Input : PIBAttribID - The identifier of the PIB attribute being confirmed.
  *!<                   Output: -
- *!< Return                  : -
+ *!< Return                  : The status of the attempt to set the request PIB attribute.
  *!< Critical section YES/NO : NO
  */
 static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_SET_Confirm(IEEE_802_15_4_PIB_ID_t PIBAttribID)

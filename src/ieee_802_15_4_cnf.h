@@ -1,7 +1,7 @@
 /*
  * ieee_802_15_4_cnf.h
  *
- *  Created on: 8 окт. 2018 г.
+ *  Created on: 8 пїЅпїЅпїЅ. 2018 пїЅ.
  *      Author: Dumitru
  */
 
@@ -17,6 +17,10 @@
 
 /*#define IEEE_802_15_4_2011_COMPLIANT */
 #define IEEE_802_15_4_2003_COMPLIANT
+
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
 
 /***************************Public Type Definitions********************************/
 

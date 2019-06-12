@@ -1,7 +1,7 @@
 /*
  * ieee_802_15_4_mac.h
  *
- *  Created on: 8 окт. 2018 г.
+ *  Created on: 8 пїЅпїЅпїЅ. 2018 пїЅ.
  *      Author: Dumitru
  */
 
@@ -11,7 +11,8 @@
 
 /***************************Imports*************************************************/
 
-#include "stdint.h"
+#include <stdint.h>
+#include <stdbool.h>
 #include "ieee_802_15_4_cnf.h"
 
 /***************************Public Macro Definitions********************************/
@@ -88,9 +89,96 @@
 #define IEEE_802_15_4_KEY_ID_MODE_8BYTE                 (0x03)
 #endif
 
-
-
 /***************************Public Type Definitions********************************/
+
+/*!<
+ *!< @brief
+ *!<
+ *!<
+ *!<
+ *!< */
+typedef enum
+{
+    SUCCESS=0,
+    TRANSACTION_OVERFLOW,
+    TRANSACTION_EXPIRED,
+    CHANNEL_ACCESS_FAILURE,
+    INVALID_GTS,
+    NO_ACK,
+    UNAVAILABLE_KEY,
+    FRAME_TOO_LONG,
+    FAILED_SECURITY_CHECK,
+    INVALID_PARAMETER
+}LastMsduTransmissionStatusType;
+
+
+/*!<
+ *!< @brief
+ *!<
+ *!<
+ *!<
+ *!< */
+typedef enum
+{
+    SUCCESS = 0,
+    INVALID_HANDLE
+}PurgedMsduRequestStatusType;
+
+
+/*!<
+ *!< @brief
+ *!<
+ *!<
+ *!<
+ *!< */
+typedef enum
+{
+    SUCCESS = 0,
+    PAN_AT_CAPACITY,
+    PAN_ACCESS_DENIED,
+    CHANNEL_ACCESS_FAILURE = 0x80,
+    NO_ACK,
+    UNAVAILABLE_KEY,
+    FAILED_SECURITY_CHECK,
+    INVALID_PARAMETER
+}AssociationStatusType;
+
+
+/*!<
+ *!< @brief Elements of PANDescriptor (per IEEE Std 802.15.4-2003 Table 41 )
+ *!< */
+typedef struct
+{
+    uint64_t    CoordAddress;       /* The address of the coordinator as specified in the received beacon frame.                          */
+
+    uint32_t    TimeStamp;          /* The time at which the beacon frame was received, in symbols. This value is equal to the
+                                     * timestamp taken when the beacon frame was received                                                */
+
+    uint16_t    CoordPANId;         /* The PAN identifier of the coordinator as specified in the received beacon frame.                  */
+
+    uint8_t     CoordAddrMode;      /* The coordinator addressing mode corresponding to the received beacon frame.
+                                     * This value can take one of the following values:
+                                     *             0x02 = 16 bit short address.
+                                     *             0x03 = 64 bit extended address.                                                       */
+
+    uint8_t     LogicalChannel;     /* The current logical channel occupied by the network.                                              */
+
+    uint8_t     SuperframeSpec;     /* The superframe specification as specified in the received beacon frame.                           */
+
+    uint8_t     LinkQuality;        /* The LQ at which the network beacon was eceived. Lower values represent lower LQ.                  */
+
+    uint8_t     ACLEntry;           /* The macSecurityMode parameter value from the ACL entry associated with the sender of the
+                                     * data frame. This value is set to 0 x 08 if the sender of the data frame was not found in the ACL. */
+
+    bool        SecurityUse;        /* An indication of whether the received beacon frame is using security. This value is set to
+                                     * TRUE if the security enable subfield was set to 1 or FALSE if the security enabled subfield
+                                     * was set to 0.                                                                                     */
+
+    bool        GTSPermit;          /* TRUE if the beacon is from a PAN coordinator that is accepting GTS requests.                      */
+
+    bool        SecurityFailure;    /* TRUE if there was an error in the security processing of the frame or FALSE otherwise.            */
+
+} IEEE_802_15_4_PANDescr_t;
 
 /*!<
  *!< @brief Frame control type (per IEEE Std 802.15.4-2003 Figure 35 )
@@ -352,8 +440,7 @@ typedef struct
 
 /***************************Public Data Definitions********************************/
 
-
-
+extern const uint64_t aExtendedAddress;
 
 /***************************Public Function Definitions****************************/
 
