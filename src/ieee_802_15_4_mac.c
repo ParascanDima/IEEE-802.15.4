@@ -8,6 +8,7 @@
 
 /**************Imports***********************************/
 
+#include "ieee_802_15_4_phy.h"
 #include "ieee_802_15_4_mac.h"
 
 /**************Private Macro Definitions*****************/
@@ -169,7 +170,7 @@ static void IEEE_802_15_4_MacDataRequest(uint8_t SrcAddrMode,
  *!< Critical section YES/NO : NO
  */
 static void IEEE_802_15_4_MacDataConfirm(uint8_t msduHandle,
-                                         LastMsduTransmissionStatusType status)
+                                         GeneralMacRequestStatusType status)
 {
 
 }
@@ -256,7 +257,7 @@ static void IEEE_802_15_4_MacPurgeRequest(uint8_t msduHandle)
  *!< Critical section YES/NO : NO
  */
 static void IEEE_802_15_4_MacPurgeConfirm(uint8_t msduHandle,
-                                          PurgedMsduRequestStatusType status)
+                                          GeneralMacRequestStatusType status)
 {
 
 }
@@ -335,7 +336,7 @@ static void IEEE_802_15_4_MacAssociateIndication(uint64_t DeviceAddress,
  */
 static void IEEE_802_15_4_MacAssociateResponse(uint64_t DeviceAddress,
                                                uint8_t AssocShortAddress,
-                                               AssociationStatusType status,
+                                               GeneralMacRequestStatusType status,
                                                bool SecurityEnable)
 {
 
@@ -357,13 +358,13 @@ static void IEEE_802_15_4_MacAssociateResponse(uint64_t DeviceAddress,
  *!< Critical section YES/NO : NO
  */
 static void IEEE_802_15_4_MacAssociateConfirm(uint16_t AssocShortAddress,
-                                               AssociationStatusType status)
+                                               GeneralMacRequestStatusType status)
 {
 
 }
 
 
-/****************************************************************************************
+/*************************************************************************NO_ACK***************
  *!< Function                : IEEE_802_15_4_MacDisassociateRequest
  *!< @brief                  : Define how a device becomes associated with a PAN.
  *!<                         : Used by an associated device to notify the coordinator of its intent to leave the PAN.
@@ -419,7 +420,7 @@ static void IEEE_802_15_4_MacDisassociateIndication(uint64_t DeviceAddress,
  *!< Return                  : -
  *!< Critical section YES/NO : NO
  */
-static void IEEE_802_15_4_MacDisassociateConfirm(AssociationStatusType status)
+static void IEEE_802_15_4_MacDisassociateConfirm(GeneralMacRequestStatusType status)
 {
 
 }
@@ -449,6 +450,508 @@ static void IEEE_802_15_4_MacBeaconNotifyIndication(uint8_t BSN,
                                                     uint64_t* AddrList,
                                                     uint8_t sduLength,
                                                     uint8_t *sdu)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacGetRequest
+ *!< @brief                  : Requests information about a given PIB attribute.
+ *!< Parameters              :
+ *!<                   Input : PIBAttribute - The identifier of the PIB attribute to read.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacGetRequest(uint8_t PIBAttribute)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacGetConfirm
+ *!< @brief                  : Requests information about a given PIB attribute.
+ *!< Parameters              :
+ *!<                   Input : status - The result of the request for MAC PIB attribute information.
+ *!<                         : PIBAttribute - The identifier of the MAC PIB attribute that was read.
+ *!<                         :
+ *!<                   Output: PIBAttributeValue - The value of the indicated MAC PIB attribute that was read.
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacGetConfirm(IEEE_802_15_4_PHY_Enum_t status,
+                                        uint8_t PIBAttribute,
+                                        void* PIBAttributeValue)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacGtsRequest
+ *!< @brief                  : Allows a device to send a request to the PAN coordinator to allocate
+ *!<                         : a new GTS or to deallocate an existing GTS.
+ *!< Parameters              :
+ *!<                   Input : GTSCharacteristics - The characteristics of the GTS request.
+ *!<                         : SecurityEnable - TRUE if security is enabled for this transfer or FALSE otherwise.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacGtsRequest(IEEE_802_15_4_GTSCaracter_t GTSCharacteristics,
+                                        bool SecurityEnable)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacGtsConfirm
+ *!< @brief                  : Reports the results of a request to allocate a new GTS or deallocate an
+ *!<                         : existing GTS.
+ *!< Parameters              :
+ *!<                   Input : GTSCharacteristics - The characteristics of the GTS.
+ *!<                         : status - The status of the GTS request.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacGtsConfirm(IEEE_802_15_4_GTSCaracter_t GTSCharacteristics,
+                                        GeneralMacRequestStatusType status)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacGtsIndication
+ *!< @brief                  : Indicates that a GTS has been allocated or that a previously allocated
+ *!<                         : GTS has been deallocated.
+ *!< Parameters              :
+ *!<                   Input : DevAddress - The short address of the device that has been allocated or deallocated a GTS.
+ *!<                         : GTSCharacteristics - The characteristics of the GTS.
+ *!<                         : SecurityUse - An indication of whether the received frame is using security. This value
+ *!<                         :               is set to TRUE if the security enable subfield was set to 1 or FALSE
+ *!<                         :               if the security enabled subfield was was set to 0.
+ *!<                         : ACLEntry - The macSecurityMode parameter value from the ACL entry associated with the sender
+ *!<                         :            of the data frame. This value is set to 0x08 if frame. This value is set to 0x08
+ *!<                         :            if the sender of the data frame was not found in the ACL.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacGtsIndication(uint16_t DevAddress,
+                                           IEEE_802_15_4_GTSCaracter_t GTSCharacteristics,
+                                           bool SecurityUse,
+                                           uint8_t ACLEntry)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacGtsIndication
+ *!< @brief                  : Indicates that a GTS has been allocated or that a previously allocated
+ *!<                         : GTS has been deallocated.
+ *!< Parameters              :
+ *!<                   Input : OrphanAddress - The address of the orphaned device.
+ *!<                         : SecurityUse - An indication of whether the received frame is using security. This value
+ *!<                         :               is set to TRUE if the security enable subfield was set to 1 or FALSE
+ *!<                         :               if the security enabled subfield was was set to 0.
+ *!<                         : ACLEntry - The macSecurityMode parameter value from the ACL entry associated with the sender
+ *!<                         :            of the data frame. This value is set to 0x08 if frame. This value is set to 0x08
+ *!<                         :            if the sender of the data frame was not found in the ACL.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacOrphanIndication(uint64_t OrphanAddress,
+                                              bool SecurityUse,
+                                              uint8_t ACLEntry)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacOrphanResponse
+ *!< @brief                  : Indicates that a GTS has been allocated or that a previously allocated
+ *!<                         : GTS has been deallocated.
+ *!< Parameters              :
+ *!<                   Input : OrphanAddress - The address of the orphaned device.
+ *!<                         : ShortAddress - The short address allocated to the orphaned device if it is associated with
+ *!<                         :                this coordinator. The special short address 0xfffe indicates that no short address was
+ *!<                         :                allocated, and the device will use its 64 bit extended address in all communications. If
+ *!<                         :                the device was not associated with this coordinator, this field will contain the value
+ *!<                         :                0xffff and be ignored on receipt.
+ *!<                         : AssociatedMember - TRUE if the orphaned device is associated with this coordinator or FALSE otherwise.
+ *!<                         : SecurityEnable - TRUE if security is enabled for this transfer or FALSE otherwise.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacOrphanResponse(uint64_t OrphanAddress,
+                                            uint16_t ShortAddress,
+                                            bool AssociatedMember,
+                                            bool SecurityEnable)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacResetRequest
+ *!< @brief                  : Allows the next higher layer to request that the MLME performs a reset operation.
+ *!< Parameters              :
+ *!<                   Input : SetDefaultPIB - If TRUE, the MAC sublayer is reset and all MAC PIB attributes are set to their default values.
+ *!<                         :                 If FALSE, the MAC sublayer is reset but all MAC PIB attributes retain their values prior to the
+ *!<                         :                 generation of the MLME-RESET.request primitive.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacResetRequest(bool SetDefaultPIB)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacResetConfirm
+ *!< @brief                  : Reports the results of the reset operation.
+ *!< Parameters              :
+ *!<                   Input : status - The result of the reset operation.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacResetConfirm(GeneralMacRequestStatusType status)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacRxEnableRequest
+ *!< @brief                  : Allows the next higher layer to request that the receiver is enable for a finite period of time.
+ *!< Parameters              :
+ *!<                   Input : DeferPermit - TRUE if the receiver enable can be deferred until during the next superframe
+ *!<                         :               if the requested time has already passed. FALSE if the receiver enable is only
+ *!<                         :               to be attempted in the current superframe. This parameter is ignored for
+ *!<                         :               nonbeacon-enabled PANs.
+ *!<                         : RxOnTime - The number of symbols from the start of the  superframe before the receiver
+ *!<                         :            superframe before the receiver is to be enabled. The precision of this value is
+ *!<                         :            a minimum of 20 bits, with the lowest 4 bits being the least significant. This
+ *!<                         :            parameter is ignored for nonbeacon-enabled PANs.
+ *!<                         : RxOnDuration - The number of symbols for which the receiver is to be enabled.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacRxEnableRequest(GeneralMacRequestStatusType status)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacRxEnableConfirm
+ *!< @brief                  : Reports the results of the attempt to enable the receiver.
+ *!< Parameters              :
+ *!<                   Input : status - The result of the reset operation.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacRxEnableConfirm(bool DeferPermit,
+                                             uint16_t RxOnTime,
+                                             uint16_t RxOnDuration)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacScanRequest
+ *!< @brief                  : Used to initiate a channel scan over a given list of channels. A device can use a channel scan to
+ *!<                         : measure the energy on the channel, search for the coordinator with which it associated, or search
+ *!<                         : for all coordinatorstransmitting beacon frames within the POS of the scanning device.
+ *!< Parameters              :
+ *!<                   Input : ScanType - Indicates the type of scan performed:
+ *!<                         :                 0 x 00 = ED scan (FFD only).
+ *!<                         :                 0 x 01 = active scan (FFD only).
+ *!<                         :                 0 x 02 = passive scan.
+ *!<                         :                 0 x 03 = orphan scan.
+ *!<                         : ScanChannels - The 5 MSBs (b27 , ... , b31 ) are reserved. The 27 LSBs (b0 , b1 , ... b26 ) indicate which
+ *!<                         :                channels are to be scanned (1 = scan, 0 = do not scan) for each of the 27 valid channels
+ *!<                         : ScanDuration - A value used to calculate the length of time to spend scanning each channel for ED, active,
+ *!<                         :                and passive scans. This parameter is ignored for orphan scans.
+ *!<                         :                The time spent scanning each channel is [aBaseSuperframeDuration * (2^n + 1)]
+ *!<                         :                symbols, where n is the value of the ScanDuration parameter.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacScanRequest(uint8_t ScanType,
+                                         uint32_t ScanChannels,
+                                         uint8_t ScanDuration)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacScanConfirm
+ *!< @brief                  : Reports the result of the channel scan request.
+ *!< Parameters              :
+ *!<                   Input : status - The status of the scan request.
+ *!<                         : ScanType - Indicates the type of scan performed:
+ *!<                         :                 0 x 00 = ED scan (FFD only).
+ *!<                         :                 0 x 01 = active scan (FFD only).
+ *!<                         :                 0 x 02 = passive scan.
+ *!<                         :                 0 x 03 = orphan scan.
+ *!<                         : UnscannedChannels - Indicate which channels are to be scanned (1 = not scaned, 0 = scaned or not requested).
+ *!<                         :                      This parameter is only valid for passive or active scans.
+ *!<                         : ResultListSize - The number of elements returned in the appropriate result lists. This value is 0
+ *!<                         :                  for the result of an orphan scan.
+ *!<                         : EnergyDetectList - The list of energy measurements, one for each channel searched during an ED scan.
+ *!<                         :                    This parameter is null for active, passive, and orphan scans.
+ *!<                         : PANDescriptorList - The list of PAN descriptors, one for each beacon found during an active or passive scan.
+ *!<                         :                     This parameter is null for ED and orphan scans.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacScanConfirm(GeneralMacRequestStatusType status,
+                                         uint8_t ScanType,
+                                         uint32_t UnscannedChannels,
+                                         uint16_t ResultListSize,
+                                         uint8_t* EnergyDetectList,
+                                         IEEE_802_15_4_PANDescr_t* PANDescriptorList)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacComStatusIndication
+ *!< @brief                  : Allows the MLME to indicate a communications status.
+ *!< Parameters              :
+ *!<                   Input : PANId - The 16 bit PAN identifier of the device from which the frame was received or to
+ *!<                         :         which the frame was being sent.
+ *!<                         : SrcAddrMode - The source addressing mode for this primitive. This value can take one of the
+ *!<                         :               following values:
+ *!<                         :                  0 x 00 = no address (addressing fields omitted).
+ *!<                         :                  0 x 01 = reserved.
+ *!<                         :                  0 x 02 = 16 bit short address.
+ *!<                         :                  0 x 03 = 64 bit extended address.
+ *!<                         : SrcAddr - The individual device address of the entity from which the frame causing the
+ *!<                         :           error originated.
+ *!<                         : DstAddrMode - The destination addressing mode for this primitive. This value can take one of the
+ *!<                         :               following values:
+ *!<                         :                  0 x 00 = no address (addressing fields omitted).
+ *!<                         :                  0 x 01 = reserved.
+ *!<                         :                  0 x 02 = 16 bit short address.
+ *!<                         :                  0 x 03 = 64 bit extended address.
+ *!<                         : DstAddr - The individual device address of the device for which the frame was intended.
+ *!<                         : status - The communications status.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacComStatusIndication(uint16_t PANId,
+                                                 uint8_t SrcAddrMode,
+                                                 uint64_t SrcAddr,
+                                                 uint8_t DstAddrMode,
+                                                 uint64_t DstAddr,
+                                                 GeneralMacRequestStatusType status)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacSetRequest
+ *!< @brief                  : Attempts to write the given value to the indicated MAC PIB attribute.
+ *!< Parameters              :
+ *!<                   Input : PIBAttribute - The identifier of the MAC PIB attribute to write.
+ *!<                         : PIBAttributeValue - The value to write to the indicated MAC PIB attribute.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacSetRequest(uint8_t PIBAttribute,
+                                        void* PIBAttributeValue)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacSetConfirm
+ *!< @brief                  : Reports the results of an attempt to write a value to a MAC PIB attribute.
+ *!< Parameters              :
+ *!<                   Input : status - The result of the request to write the MAC PIB attribute.
+ *!<                         : PIBAttribute - The identifier of the MAC PIB attribute that was written.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacSetConfirm(GeneralMacRequestStatusType status,
+                                        uint8_t PIBAttribute)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacStartRequest
+ *!< @brief                  : Makes a request for the device to start using a new superframe configuration.
+ *!< Parameters              :
+ *!<                   Input : PANId - The PAN identifier to be used by the beacon.
+ *!<                         : LogicalChannel - The logical channel on which to start transmitting beacons.
+ *!<                         : BeaconOrder - How often the beacon is to be transmitted. The beacon order, BO,
+ *!<                         :               and  the beacon interval, BI, are related as follows: for 0 ≤ BO ≤ 14,
+ *!<                         :               BI = aBaseSuperframeDuration * 2^BO symbols. If BO = 15, the coordinator
+ *!<                         :               will not transmit a beacon, and the SuperframeOrder parameter value is ignored.
+ *!<                         : SuperframeOrder -  The length of the active portion of the superframe, including the beacon frame.
+ *!<                         :                    The superframe order, SO, and the superframe duration, SD, are related as follows:
+ *!<                         :                    for 0 ≤ SO ≤ BO ≤ 14, SD = aBaseSuperframeDuration * 2^SO symbols. If SO = 15,
+ *!<                         :                    the superframe will not be active after thebeacon.
+ *!<                         : PANCoordinator - If this value is TRUE, the device will become the PAN coordinator of a new PAN. If
+ *!<                         :                  this value is FALSE, thedevice will begin transmitting beacons on the PAN with which
+ *!<                         :                  it isassociated.
+ *!<                         : BatteryLifeExtension - If this value is TRUE, the receiver of the beaconing device is disabled macBattLifeExtPeriods
+ *!<                         :                        full backoff periods after the interframe spacing (IFS) period of the beacon frame. If this
+ *!<                         :                        value is FALSE, the receiver of the beaconing device remains enabled for the entire CAP.
+ *!<                         : CoordRealignment - TRUE if a coordinator realignment command is to be transmitted prior to changing the superframe
+ *!<                         :                    configuration or FALSE otherwise.
+ *!<                         : SecurityEnable - TRUE if security is enabled for beacon transmissions or FALSE otherwise.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacStartRequest(uint16_t PANId,
+                                          uint8_t LogicalChannel,
+                                          uint8_t BeaconOrder,
+                                          uint8_t SuperframeOrder,
+                                          bool PANCoordinator,
+                                          bool BatteryLifeExtension,
+                                          bool CoordRealignment,
+                                          bool SecurityEnable)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacStartConfirm
+ *!< @brief                  : Reports the results of the attempt to start using a new superframe configuration.
+ *!< Parameters              :
+ *!<                   Input : status - The result of the attempt to start using an updated superframe configuration.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacStartConfirm(GeneralMacRequestStatusType status)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacSyncRequest
+ *!< @brief                  : Requests to synchronize with the coordinator by acquiring and, if
+ *!<                         : specified, tracking its beacons.
+ *!< Parameters              :
+ *!<                   Input : LogicalChannel - The logical channel on which to attempt coordinator synchronization.
+ *!<                         : TrackBeacon - TRUE if the MLME is to synchronize with the next beacon and attempt to
+ *!<                         :               track all future beacons. FALSE if the MLME is to synchronize with only
+ *!<                         :               the next beacon.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacSyncRequest(uint8_t LogicalChannel,
+                                         bool TrackBeacon)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacSyncLossIndication
+ *!< @brief                  :
+ *!< Parameters              :
+ *!<                   Input : LossReason - The reason that synchronization was lost.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacSyncLossIndication(GeneralMacRequestStatusType LossReason)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacPollRequest
+ *!< @brief                  : Prompts the device to request data from the coordinator.
+ *!< Parameters              :
+ *!<                   Input : CoordAddrMode - The addressing mode of the coordinator to which the poll
+ *!<                         :                 is intended. This parameter can take one of the following values:
+ *!<                         :                          2 = 16 bit short address,
+ *!<                         :                          3 = 64 bit extended address.
+ *!<                         : CoordPANId - The PAN identifier of the coordinator to which the poll is intended.
+ *!<                         : CoordAddress - The address of the coordinator to which the poll is intended.
+ *!<                         : SecurityEnable - TRUE if security is enabled for this transfer or FALSE otherwise.
+ *!<                         :
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacPollRequest(uint8_t CoordAddrMode,
+                                         uint8_t CoordPANId,
+                                         uint64_t CoordAddress,
+                                         bool SecurityEnable)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacPollConfirm
+ *!< @brief                  : Reports the results of a request to poll the coordinator for data.
+ *!< Parameters              :
+ *!<                   Input : status - The status of the data request.
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+static void IEEE_802_15_4_MacPollConfirm(GeneralMacRequestStatusType status)
 {
 
 }

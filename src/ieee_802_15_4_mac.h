@@ -100,48 +100,31 @@
 typedef enum
 {
     SUCCESS=0,
-    TRANSACTION_OVERFLOW,
-    TRANSACTION_EXPIRED,
+    BEACON_LOSS = 0xE0,
     CHANNEL_ACCESS_FAILURE,
-    INVALID_GTS,
-    NO_ACK,
-    UNAVAILABLE_KEY,
+    DENIED,
+    DISABLE_TRX_FAILURE,
+    FAILED_SECURITY_CHECK,
     FRAME_TOO_LONG,
-    FAILED_SECURITY_CHECK,
-    INVALID_PARAMETER
-}LastMsduTransmissionStatusType;
-
-
-/*!<
- *!< @brief
- *!<
- *!<
- *!<
- *!< */
-typedef enum
-{
-    SUCCESS = 0,
-    INVALID_HANDLE
-}PurgedMsduRequestStatusType;
-
-
-/*!<
- *!< @brief
- *!<
- *!<
- *!<
- *!< */
-typedef enum
-{
-    SUCCESS = 0,
-    PAN_AT_CAPACITY,
-    PAN_ACCESS_DENIED,
-    CHANNEL_ACCESS_FAILURE = 0x80,
+    INVALID_GTS,
+    INVALID_HANDLE,
+    INVALID_PARAMETER,
     NO_ACK,
+    NO_BEACON,
+    NO_DATA,
+    NO_SHORT_ADDRESS,
+    OUT_OF_CAP,
+    PAN_ID_CONFLICT,
+    REALIGNMENT,
+    TRANSACTION_EXPIRED,
+    TRANSACTION_OVERFLOW,
+    TX_ACTIVE,
     UNAVAILABLE_KEY,
-    FAILED_SECURITY_CHECK,
-    INVALID_PARAMETER
-}AssociationStatusType;
+    UNSUPPORTED_ATTRIBUTE,
+
+    PAN_AT_CAPACITY,
+    PAN_ACCESS_DENIED
+}GeneralMacRequestStatusType;
 
 
 /*!<
@@ -273,6 +256,19 @@ typedef struct
     uint8_t panCoordinator    :1;
 
 }IEEE_802_15_4_GTSSpec_t;
+
+
+/*!<
+ *!< @brief Mac GTS characteristics field format (per IEEE Std 802.15.4-2003 Figure 58 )
+ *!< */
+typedef struct
+{
+    uint8_t gtsLength         :4;
+    uint8_t dtsDirection      :1;
+    uint8_t caracteristicsType:1;
+    uint8_t /* reserved */    :2;
+
+}IEEE_802_15_4_GTSCaracter_t;
 
 
 /*!<
