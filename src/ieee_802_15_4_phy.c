@@ -93,7 +93,7 @@ static void IEEE_802_15_4_PhyDataRequest(uint8_t psduLength, IEEE_802_15_4_PSDU_
     if (DataRequestCallback != NULL){
         DataRequestCallback();
     }
-    DataConfirmation = SUCCESS;
+    DataConfirmation = PHY_SUCCESS;
 }
 
 
@@ -154,7 +154,7 @@ static void IEEE_802_15_4_CCA_Request(void)
     {
         CcaRequestCallback();
     }
-    CcaConfirmation = SUCCESS;
+    CcaConfirmation = PHY_SUCCESS;
 }
 
 
@@ -192,7 +192,7 @@ static void IEEE_802_15_4_ED_Request(void)
     {
         EdRequestCallback();
     }
-    EdConfirmation = SUCCESS;
+    EdConfirmation = PHY_SUCCESS;
 }
 
 
@@ -230,7 +230,7 @@ static void IEEE_802_15_4_GET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID)
     {
         GetRequestCallback();
     }
-    GetConfirmation = SUCCESS;
+    GetConfirmation = PHY_SUCCESS;
 }
 
 
@@ -269,7 +269,7 @@ static void IEEE_802_15_4_SET_TRX_STATE_Request(IEEE_802_15_4_PHY_Enum_t state)
     {
         SetTrxStateRequestCallback();
     }
-    SetTrxStateConfirmation = SUCCESS;
+    SetTrxStateConfirmation = PHY_SUCCESS;
 }
 
 
@@ -320,7 +320,7 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
                 {
                     phyCurrentChannel = *PIBAttributeValue;
                     SetPhyChannelCallback(phyCurrentChannel);
-                    SetConfirmation = SUCCESS;
+                    SetConfirmation = PHY_SUCCESS;
                 }
                 else
                 {
@@ -340,7 +340,7 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
         {
             phyChannelsSupported.value = (1<<(uint8_t)*PIBAttributeValue);
             SetSupportedChannelsCallback(phyChannelsSupported.value);
-            SetConfirmation = SUCCESS;
+            SetConfirmation = PHY_SUCCESS;
         }
         else
         {
@@ -354,7 +354,7 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
             {
                 phyTransmitPower.value = (uint8_t)*PIBAttributeValue;
                 SetTransmitPowerCallback(phyTransmitPower.value);
-                SetConfirmation = SUCCESS;
+                SetConfirmation = PHY_SUCCESS;
             }
             else
             {
@@ -370,7 +370,7 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
             {
                 phyCCAMode = *PIBAttributeValue;
                 SetCCAModeCallback(phyCCAMode);
-                SetConfirmation = SUCCESS;
+                SetConfirmation = PHY_SUCCESS;
             }
             else
             {

@@ -131,12 +131,12 @@ typedef enum
     BUSY_TX = 0x02,              /* The transceiver is asked to change its state while transmitting.                               */
     FORCE_TRX_OFF = 0x03,        /* The transceiver is to be switched off.                                                         */
     IDLE = 0x04,                 /* The CCA attempt has detected an idle channel.                                                  */
-    INVALID_PARAMETER = 0x05,    /* A SET/GET request was issued with a parameter in the primitive that is out of the valid range. */
+    PHY_INVALID_PARAMETER = 0x05,    /* A SET/GET request was issued with a parameter in the primitive that is out of the valid range. */
     RX_ON = 0x06,                /* The transceiver is in or is to be configured into the receiver enabled state.                  */
-    SUCCESS = 0x07,              /* A SET/GET, an ED operation, or a transceiver state change was successful.                      */
+    PHY_SUCCESS = 0x07,              /* A SET/GET, an ED operation, or a transceiver state change was successful.                      */
     TRX_OFF = 0x08,              /* The transceiver is in or is to be configured into the transceiver disabled state.              */
     TX_ON = 0x09,                /* The transceiver is in or is to be configured into the transmitter enabled state.               */
-    UNSUPPORTED_ATTRIBUTE = 0x0a /* A SET/GET request was issued with the identifier of an attribute that is not supported.        */
+    PHY_UNSUPPORTED_ATTRIBUTE = 0x0a /* A SET/GET request was issued with the identifier of an attribute that is not supported.        */
 }IEEE_802_15_4_PHY_Enum_t;
 
 
