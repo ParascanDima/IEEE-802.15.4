@@ -126,14 +126,14 @@ typedef struct{
  *!< */
 typedef enum
 {
-    CHANNEL_BUSY = 0x00,                 /* The CCA attempt has detected a busy channel.                                                   */
+    CHANNEL_BUSY = 0x00,         /* The CCA attempt has detected a busy channel.                                                   */
     BUSY_RX = 0x01,              /* The transceiver is asked to change its state while receiving.                                  */
     BUSY_TX = 0x02,              /* The transceiver is asked to change its state while transmitting.                               */
     FORCE_TRX_OFF = 0x03,        /* The transceiver is to be switched off.                                                         */
     IDLE = 0x04,                 /* The CCA attempt has detected an idle channel.                                                  */
-    PHY_INVALID_PARAMETER = 0x05,    /* A SET/GET request was issued with a parameter in the primitive that is out of the valid range. */
+    PHY_INVALID_PARAMETER = 0x05,/* A SET/GET request was issued with a parameter in the primitive that is out of the valid range. */
     RX_ON = 0x06,                /* The transceiver is in or is to be configured into the receiver enabled state.                  */
-    PHY_SUCCESS = 0x07,              /* A SET/GET, an ED operation, or a transceiver state change was successful.                      */
+    PHY_SUCCESS = 0x07,          /* A SET/GET, an ED operation, or a transceiver state change was successful.                      */
     TRX_OFF = 0x08,              /* The transceiver is in or is to be configured into the transceiver disabled state.              */
     TX_ON = 0x09,                /* The transceiver is in or is to be configured into the transmitter enabled state.               */
     PHY_UNSUPPORTED_ATTRIBUTE = 0x0a /* A SET/GET request was issued with the identifier of an attribute that is not supported.        */
@@ -409,6 +409,18 @@ extern void IEEE_802_15_4_PhyInit(void);
  */
 extern void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEEE_802_15_4_Service_t serviceType, void (*func)(void));
 
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_GetTranceiverState
+ *!< @brief                  : Returns the state of tranceiver read from chip.
+ *!< Parameters              :
+ *!<                   Input : -
+ *!<                   Output: -
+ *!< Return                  : State of the tranceiver
+ *!< Critical section YES/NO : NO
+ */
+IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_GetTranceiverState(void);
 
 
 /****************************************************************************************

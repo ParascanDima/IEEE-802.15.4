@@ -17,7 +17,7 @@
 
 /**************Private Type Definitions******************/
 
-typedef void (*voidFuncPtr)(void);
+typedef void (*voidFuncPtr)(uint8_t*);
 
 /**************Private Variable Definitions**************/
 
@@ -40,25 +40,27 @@ uint8_t phyCCAMode;
 const uint8_t aMaxPHYPacketSize = 127;
 const uint8_t aTurnaroundTime = 12;
 
-
-voidFuncPtr DataRequestCallback = NULL;
-voidFuncPtr DataConfirmCallback = NULL;
+/*!<
+ *!< @brief PHY Pointers to Chip specific config
+ *!< */
+voidFuncPtr DataRequestChipSpecificCallback = NULL;
+voidFuncPtr DataConfirmationCallback = NULL;
 IEEE_802_15_4_PHY_Enum_t DataConfirmation = IDLE;
-voidFuncPtr DataIndicationCallback = NULL;
+voidFuncPtr DataIndicationMacCallback = NULL;
 
-voidFuncPtr CcaRequestCallback = NULL;
+voidFuncPtr CcaRequestChipSpecificCallback = NULL;
 voidFuncPtr CcaConfirmCallback = NULL;
 IEEE_802_15_4_PHY_Enum_t CcaConfirmation = IDLE;
 
-voidFuncPtr EdRequestCallback = NULL;
+voidFuncPtr EdRequestChipSpecificCallback = NULL;
 voidFuncPtr EdConfirmCallback = NULL;
 IEEE_802_15_4_PHY_Enum_t EdConfirmation = IDLE;
 
-voidFuncPtr GetRequestCallback = NULL;
+voidFuncPtr GetRequestChipSpecificCallback = NULL;
 voidFuncPtr GetConfirmCallback = NULL;
 IEEE_802_15_4_PHY_Enum_t GetConfirmation = IDLE;
 
-voidFuncPtr SetTrxStateRequestCallback = NULL;
+voidFuncPtr SetTrxStateRequestChipSpecificCallback = NULL;
 voidFuncPtr SetTrxStateConfirmCallback = NULL;
 IEEE_802_15_4_PHY_Enum_t SetTrxStateConfirmation = IDLE;
 
@@ -67,9 +69,16 @@ void (*SetSupportedChannelsCallback)(uint32_t) = NULL;
 void (*SetTransmitPowerCallback)(uint8_t) = NULL;
 void (*SetCCAModeCallback)(uint8_t) = NULL;
 
-voidFuncPtr SetRequestCallback = NULL;
+voidFuncPtr SetRequestChipSpecificCallback = NULL;
 voidFuncPtr SetConfirmCallback = NULL;
 IEEE_802_15_4_PHY_Enum_t SetConfirmation = IDLE;
+
+IEEE_802_15_4_PHY_Enum_t (*GetTranceiverState)(void) = NULL;
+
+/*!<
+ *!< @brief PHY internal operating state of the transceiver
+ *!< */
+IEEE_802_15_4_PHY_Enum_t _IEEE_802_15_4_Intern_Transceiver_State_ = TRX_OFF;
 
 /**************Public Variable Definitions***************/
 
@@ -84,16 +93,33 @@ IEEE_802_15_4_PHY_t phyMain;
  *!< Parameters              :
  *!<                   Input : psduLength - The number of octets contained in the PSDU to be transmitted by the PHY entity.
  *!<                         : psdu - The set of octets forming the PSDU to be transmitted by the PHY entity.
+ *!<                         : confirmationCallback - Non standard parameter used to confirm data transfer
  *!<                   Output: -
  *!< Return                  : -
  *!< Critical section YES/NO : NO
  */
-static void IEEE_802_15_4_PhyDataRequest(uint8_t psduLength, IEEE_802_15_4_PSDU_t psdu)
+static void IEEE_802_15_4_PhyDataRequest(uint8_t psduLength, IEEE_802_15_4_PSDU_t psdu, void (*confirmationCallback)(uint8_t*))
 {
-    if (DataRequestCallback != NULL){
-        DataRequestCallback();
+    /* the instance of new packet should be created */
+    IEEE_802_15_4_PPDU_t phyPacket = {.Preable = (uint32_t)0x00000000, .SFD = (uint8_t)0xA7};
+
+    phyMain.PLME_SAP.SET_TRX_STATE.Request(TX_ON);
+
+    if (psduLength <= aMaxPHYPacketSize)
+    {
+        phyPacket.frameLength = (psduLength << 1);
+        phyPacket.PSDU = psdu;
+
+        if (DataRequestChipSpecificCallback != NULL){
+            DataRequestChipSpecificCallback();
+        }
+        DataConfirmationCallback = confirmationCallback;
+        DataConfirmation = TX_ON;
     }
-    DataConfirmation = PHY_SUCCESS;
+    else
+    {
+        DataConfirmation = RX_ON;
+    }
 }
 
 
@@ -108,13 +134,15 @@ static void IEEE_802_15_4_PhyDataRequest(uint8_t psduLength, IEEE_802_15_4_PSDU_
  *!< Return                  : The result of the request to transmit a packet.
  *!< Critical section YES/NO : NO
  */
-static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_PhyDataConfirm(void)
+static void IEEE_802_15_4_PhyDataConfirm(IEEE_802_15_4_PHY_Enum_t status)
 {
-    if (DataConfirmCallback != NULL)
+    phyMain.PLME_SAP.SET_TRX_STATE.Request(RX_ON);
+    //DataConfirmation = PHY_SUCCESS;
+
+    if (DataConfirmationCallback != NULL)
     {
-        DataConfirmCallback();
+        DataConfirmationCallback((uint8_t*)&status);
     }
-    return DataConfirmation;
 }
 
 
@@ -132,9 +160,12 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_PhyDataConfirm(void)
  */
 static void IEEE_802_15_4_PhyDataIndication(uint8_t psduLength, uint8_t* psdu, uint8_t ppduLinkQuality)
 {
-    if (DataIndicationCallback != NULL)
+    if (psduLength != 0 && psduLength <= aMaxPHYPacketSize)
     {
-        DataIndicationCallback();
+        if (DataIndicationMacCallback != NULL)
+        {
+            DataIndicationMacCallback(psdu);
+        }
     }
 }
 
@@ -150,11 +181,21 @@ static void IEEE_802_15_4_PhyDataIndication(uint8_t psduLength, uint8_t* psdu, u
  */
 static void IEEE_802_15_4_CCA_Request(void)
 {
-    if (CcaRequestCallback != NULL)
+    IEEE_802_15_4_PHY_Enum_t tranceiverState;
+
+
+    tranceiverState = IEEE_802_15_4_GetTranceiverState();
+    if (RX_ON == tranceiverState)
     {
-        CcaRequestCallback();
+        if (CcaRequestChipSpecificCallback != NULL)
+        {
+            CcaRequestChipSpecificCallback((uint8_t*)&CcaConfirmation);
+        }
+        else
+        {
+            CcaConfirmation = tranceiverState;
+        }
     }
-    CcaConfirmation = PHY_SUCCESS;
 }
 
 
@@ -167,13 +208,13 @@ static void IEEE_802_15_4_CCA_Request(void)
  *!< Return                  : The result of the request to perform a CCA.
  *!< Critical section YES/NO : NO
  */
-static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_CCA_Confirm(void)
+static void IEEE_802_15_4_CCA_Confirm(IEEE_802_15_4_PHY_Enum_t status)
 {
     if (CcaConfirmCallback != NULL)
     {
-        CcaConfirmCallback();
+        CcaConfirmCallback((uint8_t*)&status);
     }
-    return CcaConfirmation;
+    CcaConfirmation = status;
 }
 
 
@@ -188,11 +229,10 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_CCA_Confirm(void)
  */
 static void IEEE_802_15_4_ED_Request(void)
 {
-    if (EdRequestCallback != NULL)
+    if (EdRequestChipSpecificCallback != NULL)
     {
-        EdRequestCallback();
+        EdRequestChipSpecificCallback();
     }
-    EdConfirmation = PHY_SUCCESS;
 }
 
 
@@ -205,13 +245,13 @@ static void IEEE_802_15_4_ED_Request(void)
  *!< Return                  : The result of the request to perform an ED measurement.
  *!< Critical section YES/NO : NO
  */
-static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_ED_Confirm(uint8_t* EnergyLevel)
+static void IEEE_802_15_4_ED_Confirm(IEEE_802_15_4_PHY_Enum_t status, uint8_t* EnergyLevel)
 {
     if (EdConfirmCallback != NULL)
     {
         EdConfirmCallback();
     }
-    return EdConfirmation;
+    EdConfirmation = status;
 }
 
 
@@ -226,11 +266,10 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_ED_Confirm(uint8_t* EnergyLevel)
  */
 static void IEEE_802_15_4_GET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID)
 {
-    if (GetRequestCallback != NULL)
+    if (GetRequestChipSpecificCallback != NULL)
     {
-        GetRequestCallback();
+        GetRequestChipSpecificCallback((uint8_t*)&PIBAttribID);
     }
-    GetConfirmation = PHY_SUCCESS;
 }
 
 
@@ -244,13 +283,13 @@ static void IEEE_802_15_4_GET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID)
  *!< Return                  : The result of the request for PHY PIB attribute information.
  *!< Critical section YES/NO : NO
  */
-static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_GET_Confirm(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_t* PIBAttributeValue)
+static void IEEE_802_15_4_GET_Confirm(IEEE_802_15_4_PHY_Enum_t status, IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_t* PIBAttributeValue)
 {
     if (GetConfirmCallback != NULL)
     {
         GetConfirmCallback();
     }
-    return GetConfirmation;
+    GetConfirmation = status;
 }
 
 
@@ -265,11 +304,10 @@ static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_GET_Confirm(IEEE_802_15_4_PIB_ID_t
  */
 static void IEEE_802_15_4_SET_TRX_STATE_Request(IEEE_802_15_4_PHY_Enum_t state)
 {
-    if (SetTrxStateRequestCallback != NULL)
+    if (SetTrxStateRequestChipSpecificCallback != NULL)
     {
-        SetTrxStateRequestCallback();
+        SetTrxStateRequestChipSpecificCallback();
     }
-    SetTrxStateConfirmation = PHY_SUCCESS;
 }
 
 
@@ -283,13 +321,13 @@ static void IEEE_802_15_4_SET_TRX_STATE_Request(IEEE_802_15_4_PHY_Enum_t state)
  *!< Return                  : The result of the request to change the state of the transceiver.
  *!< Critical section YES/NO : NO
  */
-static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_SET_TRX_STATE_Confirm(void)
+static void IEEE_802_15_4_SET_TRX_STATE_Confirm(IEEE_802_15_4_PHY_Enum_t status)
 {
     if (SetTrxStateConfirmCallback != NULL)
     {
         SetTrxStateConfirmCallback();
     }
-    return SetTrxStateConfirmation;
+    SetTrxStateConfirmation = status;
 }
 
 
@@ -395,13 +433,13 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
  *!< Return                  : The status of the attempt to set the request PIB attribute.
  *!< Critical section YES/NO : NO
  */
-static IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_SET_Confirm(IEEE_802_15_4_PIB_ID_t PIBAttribID)
+static void IEEE_802_15_4_SET_Confirm(IEEE_802_15_4_PHY_Enum_t status, IEEE_802_15_4_PIB_ID_t PIBAttribID)
 {
     if (SetConfirmCallback != NULL)
     {
         SetConfirmCallback();
     }
-    return IDLE;
+    SetConfirmation = status;
 }
 
 
@@ -449,7 +487,7 @@ void IEEE_802_15_4_PhyInit(void)
  *!< Return                  : -
  *!< Critical section YES/NO : NO
  */
-void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEEE_802_15_4_Service_t serviceType, void (*func)(void))
+void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEEE_802_15_4_Service_t serviceType, void (*func)(uint8_t*))
 {
     if (func != NULL)
     {
@@ -461,15 +499,15 @@ void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEE
                 switch (serviceType)
                 {
                     case enRequest:
-                        DataRequestCallback = (voidFuncPtr)func;
+                        DataRequestChipSpecificCallback = (voidFuncPtr)func;
                         break;
 
                     case enConfirm:
-                        DataConfirmCallback = (voidFuncPtr)func;
+                        DataConfirmationCallback = (voidFuncPtr)func;
                         break;
 
                     case enIndication:
-                        DataIndicationCallback = (voidFuncPtr)func;
+                        DataIndicationMacCallback = (voidFuncPtr)func;
                         break;
 
                     default:
@@ -482,7 +520,7 @@ void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEE
                 switch (serviceType)
                 {
                     case enRequest:
-                        CcaRequestCallback = (voidFuncPtr)func;
+                        CcaRequestChipSpecificCallback = (voidFuncPtr)func;
                         break;
 
                     case enConfirm:
@@ -499,7 +537,7 @@ void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEE
                 switch (serviceType)
                 {
                     case enRequest:
-                        EdRequestCallback = (voidFuncPtr)func;
+                        EdRequestChipSpecificCallback = (voidFuncPtr)func;
                         break;
 
                     case enConfirm:
@@ -516,7 +554,7 @@ void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEE
                 switch (serviceType)
                 {
                     case enRequest:
-                        GetRequestCallback = (voidFuncPtr)func;
+                        GetRequestChipSpecificCallback = (voidFuncPtr)func;
                         break;
 
                     case enConfirm:
@@ -533,7 +571,7 @@ void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEE
                 switch (serviceType)
                 {
                     case enRequest:
-                        SetTrxStateRequestCallback = (voidFuncPtr)func;
+                        SetTrxStateRequestChipSpecificCallback = (voidFuncPtr)func;
                         break;
 
                     case enConfirm:
@@ -550,7 +588,7 @@ void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEE
                 switch (serviceType)
                 {
                     case enRequest:
-                        SetRequestCallback = (voidFuncPtr)func;
+                        SetRequestChipSpecificCallback = (voidFuncPtr)func;
                         break;
 
                     case enConfirm:
@@ -576,7 +614,31 @@ void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEE
 
 
 
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_GetTranceiverState
+ *!< @brief                  : Returns the state of tranceiver read from chip.
+ *!< Parameters              :
+ *!<                   Input : -
+ *!<                   Output: -
+ *!< Return                  : State of the tranceiver
+ *!< Critical section YES/NO : NO
+ */
+IEEE_802_15_4_PHY_Enum_t IEEE_802_15_4_GetTranceiverState(void)
+{
+    IEEE_802_15_4_PHY_Enum_t state;
 
+    if (GetTranceiverState != NULL)
+    {
+        state = GetTranceiverState();
+    }
+    else
+    {
+        state = TRX_OFF;
+    }
+    _IEEE_802_15_4_Intern_Transceiver_State_ = state;
+
+    return state;
+}
 
 
 
