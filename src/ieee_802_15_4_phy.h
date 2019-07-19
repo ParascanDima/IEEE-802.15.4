@@ -178,6 +178,25 @@ typedef enum
     PLME_SET
 }IEEE_802_15_4_ServiceAccessPoint_t;
 
+
+/*!<
+ *!< @brief PD-Data.request type (per IEEE Std 802.15.4-2003   6.2.1 PHY data service (PD-DATA))
+ *!< */
+typedef void (*PD_Data_Request_t)(uint8_t psduLength, uint8_t* psdu);
+
+
+/*!<
+ *!< @brief PD-Data.confirm type (per IEEE Std 802.15.4-2003   6.2.1 PHY data service (PD-DATA))
+ *!< */
+typedef void (*PD_Data_Confirm_t)(IEEE_802_15_4_PHY_Enum_t status);
+
+
+/*!<
+ *!< @brief PD-Data.indication type (per IEEE Std 802.15.4-2003   6.2.1 PHY data service (PD-DATA))
+ *!< */
+typedef void (*PD_Data_Indication_t)(uint8_t psduLength, uint8_t* psdu, uint8_t ppduLinkQuality);
+
+
 /*!<
  *!< @brief PHY data service description (per IEEE Std 802.15.4-2003   6.2.1 PHY data service)
  *!< */
@@ -188,17 +207,17 @@ typedef struct
      * psdu       - The set of octets forming the PSDU to be transmitted by the PHY entity.
      *  */
     /* Valid psduLength range: <= aMaxPHYPacketSize */
-    void (*Request)(uint8_t psduLength, uint8_t* psdu);
+    PD_Data_Request_t Request;
 
     /* Confirm shows the status of transmition */
     /* Valid status range:  SUCCESS, RX_ON, TRX_OFF */
-    IEEE_802_15_4_PHY_Enum_t (*Confirm)(void);
+    PD_Data_Confirm_t Confirm;
 
     /* Indication transfers the received PSDU to MAC sublayer
      * */
     /* Valid psduLength range: <= aMaxPHYPacketSize */
     /* Valid psduLength range:  0x00 - 0xFF */
-    void (*Indication)(uint8_t psduLength, uint8_t* psdu, uint8_t ppduLinkQuality);
+    PD_Data_Indication_t Indication;
 }IEEE_802_15_4_PD_DATA_t;
 
 
@@ -215,18 +234,42 @@ typedef struct
 
 
 /*!<
+ *!< @brief PLME-CCA.request type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-CCA))
+ *!< */
+typedef void (*PLME_CCA_Request_t)(void);
+
+
+/*!<
+ *!< @brief PLME-CCA.confirm type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-CCA))
+ *!< */
+typedef void (*PLME_CCA_Confirm_t)(IEEE_802_15_4_PHY_Enum_t status);
+
+
+/*!<
  *!< @brief PHY management service description (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-CCA))
  *!< */
 typedef struct
 {
     /* Request is generated  by the MLME and issued to its PLME whenever the CSMA-CA algorithm requires an assessment of the channel. */
-    void (*Request)(void);
+    PLME_CCA_Request_t Request;
 
     /* Confirm shows the status of transmition */
     /* Valid status range: TRX_OFF, TX_ON, BUSY, IDLE */
-    IEEE_802_15_4_PHY_Enum_t (*Confirm)(void);
+    PLME_CCA_Confirm_t Confirm;
 
 }IEEE_802_15_4_PLME_CCA_t;
+
+
+/*!<
+ *!< @brief PLME-ED.request type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-ED))
+ *!< */
+typedef void (*PLME_ED_Request_t)(void);
+
+
+/*!<
+ *!< @brief PLME-ED.confirm type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-ED))
+ *!< */
+typedef void (*PLME_ED_Confirm_t)(IEEE_802_15_4_PHY_Enum_t status, uint8_t* EnergyLevel);
 
 
 /*!<
@@ -235,14 +278,28 @@ typedef struct
 typedef struct
 {
     /* Request is generated  by the MLME and issued to its PLME to request an ED measurement. */
-    void (*Request)(void);
+    PLME_ED_Request_t Request;
 
     /* Confirm shows the status of transmition */
     /* Valid status range: SUCCESS, TRX_OFF, TX_ON */
     /* Valid EnergyLevel range: 0x00 - 0xFF */
-    IEEE_802_15_4_PHY_Enum_t (*Confirm)(uint8_t* EnergyLevel);
+    PLME_ED_Confirm_t Confirm;
 
 }IEEE_802_15_4_PLME_ED_t;
+
+
+/*!<
+ *!< @brief PLME-GET.request type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-GET))
+ *!< */
+typedef void (*PLME_GET_Request_t)(IEEE_802_15_4_PIB_ID_t PIBAttribID);
+
+
+/*!<
+ *!< @brief PLME-GET.confirm type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-GET))
+ *!< */
+typedef void (*PLME_GET_Confirm_t)(IEEE_802_15_4_PHY_Enum_t status, IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_t* PIBAttributeValue);
+
+
 
 #ifndef IEEE_802_15_4_2011_COMPLIANT
 /*!<
@@ -252,13 +309,13 @@ typedef struct
 {
     /* Request is generated  by the MLME and issued to its PLME to obtain information from the PHY PIB. */
     /* Valid PIBAttribID range:  */
-    void (*Request)(IEEE_802_15_4_PIB_ID_t PIBAttribID);
+    PLME_GET_Request_t Request;
 
     /* Confirm shows the status of transmition */
     /* Valid status range: SUCCESS, UNSUPPORTED_ATTRIBUTE */
     /* Valid PIBAttribID range:  */
     /* Valid PIBAttributeValue range: Attribute specific (see IEEE Std 802.15.4-2003 Table 19) */
-    IEEE_802_15_4_PHY_Enum_t (*Confirm)(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_t* PIBAttributeValue);
+    PLME_GET_Confirm_t Confirm;
 
 }IEEE_802_15_4_PLME_GET_t;
 
@@ -268,13 +325,13 @@ typedef struct
 /*!<
  *!< @brief PLME-SET-TRX-STATE.request type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-SET-TRX-STATE))
  *!< */
-typedef void (*PLME_SET_TRX_STATE_Request_t)(IEEE_802_15_4_PHY_Enum_t status);
+typedef void (*PLME_SET_TRX_STATE_Request_t)(IEEE_802_15_4_PHY_Enum_t state);
 
 
 /*!<
  *!< @brief PLME-SET-TRX-STATE.confirm type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-SET-TRX-STATE))
  *!< */
-typedef IEEE_802_15_4_PHY_Enum_t (*PLME_SET_TRX_STATE_Confirm_t)(void);
+typedef void (*PLME_SET_TRX_STATE_Confirm_t)(IEEE_802_15_4_PHY_Enum_t status);
 
 /*!<
  *!< @brief PHY management service description (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-SET-TRX-STATE))
@@ -303,7 +360,7 @@ typedef void (*PLME_SET_Request_t)(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_t* 
 /*!<
  *!< @brief PLME-SET.confirm type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-SET))
  *!< */
-typedef IEEE_802_15_4_PHY_Enum_t (*PLME_SET_Confirm_t)(IEEE_802_15_4_PIB_ID_t PIBAttribID);
+typedef void (*PLME_SET_Confirm_t)(IEEE_802_15_4_PHY_Enum_t status, IEEE_802_15_4_PIB_ID_t PIBAttribID);
 
 
 /*!<
@@ -407,7 +464,7 @@ extern void IEEE_802_15_4_PhyInit(void);
  *!< Return                  : -
  *!< Critical section YES/NO : NO
  */
-extern void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEEE_802_15_4_Service_t serviceType, void (*func)(void));
+extern void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEEE_802_15_4_Service_t serviceType, void (*func)(void*));
 
 
 
