@@ -31,6 +31,8 @@
 
 #endif
 
+#define IEEE_802_15_4_MAX_NUM_CHANNELS                  27
+
 /***************************Public Type Definitions********************************/
 
 #ifdef IEEE_802_15_4_2011_COMPLIANT
@@ -52,7 +54,6 @@ typedef union
     uint32_t value;
     struct{
         uint8_t    /*  reserved  */  : 5;
-        uint8_t    ch27              : 1;
         uint8_t    ch26              : 1;
         uint8_t    ch25              : 1;
         uint8_t    ch24              : 1;

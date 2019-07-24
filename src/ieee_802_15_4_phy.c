@@ -247,7 +247,7 @@ static void IEEE_802_15_4_ED_Request(void)
     }
     else
     {
-        EdConfirmation = tranceiverState;
+        phyMain.PLME_SAP.ED.Confirm(tranceiverState, 0);
     }
 }
 
@@ -291,7 +291,7 @@ static void IEEE_802_15_4_GET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID)
     }
     else
     {
-        phyMain.PLME_SAP.GET.Confirm(UNSUPPORTED_ATTRIBUTE, PIBAttribID, NULL);
+        phyMain.PLME_SAP.GET.Confirm(PHY_UNSUPPORTED_ATTRIBUTE, PIBAttribID, NULL);
     }
 }
 
@@ -308,6 +308,22 @@ static void IEEE_802_15_4_GET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID)
  */
 static void IEEE_802_15_4_GET_Confirm(IEEE_802_15_4_PHY_Enum_t status, IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_t* PIBAttributeValue)
 {
+    switch (PIBAttribID) {
+        case PHY_CURRENT_CHANNEL:
+            phyCurrentChannel = *PIBAttributeValue;
+            break;
+        case PHY_CHANNELS_SUPPORTED:
+            phyChannelsSupported.value = *(uint32_t*)PIBAttributeValue;
+            break;
+        case PHY_TRANSMIT_POWER:
+            phyTransmitPower.value = *PIBAttributeValue;
+            break;
+        case PHY_CCA_MODE:
+            phyCCAMode = *PIBAttributeValue;
+            break;
+        default:
+            break;
+    }
     if (GetConfirmCallback != NULL)
     {
         GetConfirmCallback(status, PIBAttribID, PIBAttributeValue);
@@ -381,31 +397,33 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
                 {
                     phyCurrentChannel = *PIBAttributeValue;
                     SetPhyChannelCallback(phyCurrentChannel);
-                    SetConfirmation = PHY_SUCCESS;
+                    phyMain.PLME_SAP.SET.Confirm(PHY_SUCCESS, PIBAttribID);
                 }
                 else
                 {
-
+                    phyMain.PLME_SAP.SET.Confirm(PHY_INVALID_PARAMETER, PIBAttribID);
                 }
             }
             else
             {
-
+                phyMain.PLME_SAP.SET.Confirm(PHY_INVALID_PARAMETER, PIBAttribID);
             }
         }
 
         break;
     case PHY_CHANNELS_SUPPORTED:
-
-        if (SetSupportedChannelsCallback != NULL)
+        if (IEEE_802_15_4_MAX_NUM_CHANNELS >= (uint8_t)*PIBAttributeValue)
         {
-            phyChannelsSupported.value = (1<<(uint8_t)*PIBAttributeValue);
-            SetSupportedChannelsCallback(phyChannelsSupported.value);
-            SetConfirmation = PHY_SUCCESS;
+            if (SetSupportedChannelsCallback != NULL)
+            {
+                phyChannelsSupported.value = (1<<(uint8_t)*PIBAttributeValue);
+                SetSupportedChannelsCallback(phyChannelsSupported.value);
+                phyMain.PLME_SAP.SET.Confirm(PHY_SUCCESS, PIBAttribID);
+            }
         }
         else
         {
-
+            phyMain.PLME_SAP.SET.Confirm(PHY_INVALID_PARAMETER, PIBAttribID);
         }
         break;
     case PHY_TRANSMIT_POWER:
@@ -415,11 +433,11 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
             {
                 phyTransmitPower.value = (uint8_t)*PIBAttributeValue;
                 SetTransmitPowerCallback(phyTransmitPower.value);
-                SetConfirmation = PHY_SUCCESS;
+                phyMain.PLME_SAP.SET.Confirm(PHY_SUCCESS, PIBAttribID);
             }
             else
             {
-
+                phyMain.PLME_SAP.SET.Confirm(PHY_INVALID_PARAMETER, PIBAttribID);
             }
         }
         break;
@@ -431,15 +449,16 @@ static void IEEE_802_15_4_SET_Request(IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_
             {
                 phyCCAMode = *PIBAttributeValue;
                 SetCCAModeCallback(phyCCAMode);
-                SetConfirmation = PHY_SUCCESS;
+                phyMain.PLME_SAP.SET.Confirm(PHY_SUCCESS, PIBAttribID);
             }
             else
             {
-
+                phyMain.PLME_SAP.SET.Confirm(PHY_INVALID_PARAMETER, PIBAttribID);
             }
         }
         break;
     default:
+        phyMain.PLME_SAP.SET.Confirm(PHY_UNSUPPORTED_ATTRIBUTE, PIBAttribID);
         break;
 
     }
