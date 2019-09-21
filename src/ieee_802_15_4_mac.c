@@ -22,28 +22,6 @@
 /**************Private Variable Definitions**************/
 
 /*!<
- *!< @brief MAC constants
- *!< */
-const uint8_t aBaseSlotDuration = (uint8_t)60;
-const uint16_t aBaseSuperframeDuration = (uint16_t)960;
-const uint8_t aMaxBE = (uint8_t)5;
-const uint8_t aMaxBeaconOverhead = (uint8_t)75;
-const uint8_t aMaxBeaconPayloadLength = (uint8_t)52;
-const uint8_t aGTSDescPersistenceTime = (uint8_t)4;
-const uint8_t aMaxFrameOverhead = (uint8_t)25;
-const uint16_t aMaxFrameResponseTime = (uint16_t)1220;
-const uint8_t aMaxFrameRetries = (uint8_t)3;
-const uint8_t aMaxLostBeacons = (uint8_t)4;
-const uint8_t aMaxMACFrameSize = (uint8_t)102;
-const uint8_t aMaxSIFSFrameSize = (uint8_t)18;
-const uint16_t aMinCAPLength = (uint16_t)440;
-const uint8_t aMinLIFSPeriod = (uint8_t)40;
-const uint8_t aMinSIFSPeriod = (uint8_t)12;
-const uint8_t aNumSuperframeSlots = (uint8_t)16;
-const uint16_t aResponseWaitTime = (uint16_t)30720;
-const uint8_t aUnitBackoffPeriod = (uint8_t)20;
-
-/*!<
  *!< @brief Constants that are not defined by the IEEE Std 802.15.4-2003 but are upper side of threshold
  *!< */
 const uint8_t ACLSecurityMaterialLengthMax = (uint8_t)26;
@@ -78,7 +56,7 @@ uint16_t macTransactionPersistenceTime = (uint16_t)0x01F4;
 /*!<
  *!< @brief MAC PIB security attributes
  *!< */
-uint8_t macACLEntryDescriptorSet[] = "";
+uint8_t *macACLEntryDescriptorSet = NULL;
 uint8_t macACLEntryDescriptorSetSize = (uint8_t)0x00;
 bool macDefaultSecurity = (bool)false;
 uint8_t macDefaultSecurityMaterialLength = (uint8_t)0x15;
@@ -95,6 +73,8 @@ uint16_t ACLPANId;
 uint8_t ACLSecurityMaterialLength = (uint8_t)21;
 uint8_t ACLSecurityMaterial[ACLSecurityMaterialLengthMax] = "";
 uint8_t ACLSecuritySuite = (uint8_t)0x00;
+
+uint8_t u8GlbSequenceCnt = 0;
 /**************Public Variable Definitions***************/
 
 const uint64_t aExtendedAddress __attribute__((weak)) = (uint64_t)0xFFFFFFFFFFFFFFFF;
@@ -152,7 +132,73 @@ static void IEEE_802_15_4_MacDataRequest(uint8_t SrcAddrMode,
                                          uint8_t msduHandle,
                                          uint8_t TxOptions)
 {
+    uint8_t index;
+    /* Create a new instance of packet for transmition */
+    IEEE_802_15_4_MacDataFrame_t dataFrame;
 
+    /* Specify that the request is the data request */
+    dataFrame.frameControl.Field.frameType = IEEE_802_15_4_FRAME_TYPE_DATA;
+
+    if ((TxOptions & (uint8_t)0x0F) != (uint8_t)0x00)
+    {
+        if((TxOptions & IEEE_802_15_4_ACK_TRANSMISSION) != (uint8_t)0x00)
+        {
+            dataFrame.frameControl.Field.ackRequest = (uint8_t)0x01;
+        }
+        if((TxOptions & IEEE_802_15_4_GTS_TRANSMISSION) != (uint8_t)0x00)
+        {
+            dataFrame.frameControl.Field.ackRequest = (uint8_t)0x01;
+        }
+        else if((TxOptions & IEEE_802_15_4_INDIR_TRANSMISSION) != (uint8_t)0x00)
+        {
+            dataFrame.frameControl.Field.intraPAN = (uint8_t)0x01;
+        }
+        if((TxOptions & IEEE_802_15_4_SE_TRANSMISSION) != (uint8_t)0x00)
+        {
+            dataFrame.frameControl.Field.securityEnabled = (uint8_t)0x01;
+        }
+        /* Addressing modes are set here for source and destination */
+        if ((uint8_t)0x01 != SrcAddrMode && SrcAddrMode < (uint8_t)0x05)
+        {
+            dataFrame.frameControl.Field.srcAddrMode = SrcAddrMode;
+        }
+        else
+        {
+            /* The review of this is required */
+            dataFrame.frameControl.Field.srcAddrMode = IEEE_802_15_4_NO_ADDR_FIELD;
+        }
+        if ((uint8_t)0x01 != DstAddrMode && DstAddrMode < (uint8_t)0x05)
+        {
+            dataFrame.frameControl.Field.dstAddrMode = DstAddrMode;
+        }
+        else
+        {
+            /* The review of this is required */
+            dataFrame.frameControl.Field.dstAddrMode = IEEE_802_15_4_NO_ADDR_FIELD;
+        }
+
+        dataFrame.dstPANID = DstPANId;
+        dataFrame.dstAddr = DstAddr;
+
+        dataFrame.srcPANID = SrcPANId;
+        dataFrame.srcAddr = SrcAddr;
+
+        for (index = 0; index < msduLength; ++index) {
+            dataFrame.payload[index] = msdu[index];
+        }
+
+
+        dataFrame.sequenceNumber = u8GlbSequenceCnt++;
+
+        phyMain.PLME_SAP.SET_TRX_STATE.Request(TX_ON);
+
+
+
+    }
+    else
+    {
+        /* The TxOptions are wrong */
+    }
 }
 
 

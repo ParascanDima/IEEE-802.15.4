@@ -89,6 +89,38 @@
 #define IEEE_802_15_4_KEY_ID_MODE_8BYTE                 (0x03)
 #endif
 
+
+/*!<
+ *!< @brief Description of transmission options on request
+ *!< */
+#define IEEE_802_15_4_ACK_TRANSMISSION                  (uint8_t)(0x01)
+#define IEEE_802_15_4_GTS_TRANSMISSION                  (uint8_t)(0x02)
+#define IEEE_802_15_4_INDIR_TRANSMISSION                (uint8_t)(0x04)
+#define IEEE_802_15_4_SE_TRANSMISSION                   (uint8_t)(0x08)
+
+
+/*!<
+ *!< @brief MAC constants
+ *!< */
+#define aBaseSlotDuration                               (uint8_t)60
+#define aBaseSuperframeDuration                         (uint16_t)960
+#define aMaxBE                                          (uint8_t)5
+#define aMaxBeaconOverhead                              (uint8_t)75
+#define aMaxBeaconPayloadLength                         (uint8_t)52
+#define aGTSDescPersistenceTime                         (uint8_t)4
+#define aMaxFrameOverhead                               (uint8_t)25
+#define aMaxFrameResponseTime                           (uint16_t)1220
+#define aMaxFrameRetries                                (uint8_t)3
+#define aMaxLostBeacons                                 (uint8_t)4
+#define aMaxMACFrameSize                                (uint8_t)102
+#define aMaxSIFSFrameSize                               (uint8_t)18
+#define aMinCAPLength                                   (uint16_t)440
+#define aMinLIFSPeriod                                  (uint8_t)40
+#define aMinSIFSPeriod                                  (uint8_t)12
+#define aNumSuperframeSlots                             (uint8_t)16
+#define aResponseWaitTime                               (uint16_t)30720
+#define aUnitBackoffPeriod                              (uint8_t)20
+
 /***************************Public Type Definitions********************************/
 
 /*!<
@@ -382,7 +414,7 @@ typedef struct
     uint64_t    srcAddr;
 
     /* ===================== MAC PAYLOAD ===================== */
-    uint8_t *   payload;
+    uint8_t    payload[aMaxMACFrameSize];
 
     /* ========================= MFR ========================= */
     uint16_t    fcs;
