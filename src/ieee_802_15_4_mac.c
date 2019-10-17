@@ -8,7 +8,6 @@
 
 /**************Imports***********************************/
 
-#include "ieee_802_15_4_phy.h"
 #include "ieee_802_15_4_mac.h"
 
 /**************Private Macro Definitions*****************/
@@ -30,49 +29,49 @@ const uint8_t macACLEntryDescriptorSetSizeMax = UINT8_MAX;
 /*!<
  *!< @brief MAC PIB attributes
  *!< */
-uint8_t macAckWaitDuration = (uint8_t)54;
-bool macAssociationPermit = (bool)false;
-bool macAutoRequest = (bool)true;
-bool macBattLifeExt = (bool)false;
-uint8_t macBattLifeExtPeriods = (uint8_t)6;
-uint8_t *macBeaconPayload = NULL;
-uint8_t macBeaconPayloadLength = (uint8_t)0;
-uint8_t macBeaconOrder = (uint8_t)15;
-uint32_t macBeaconTxTime = (uint32_t)0x00;
-uint8_t macBSN;
-uint64_t macCoordExtendedAddress;
-uint16_t macCoordShortAddress = (uint16_t)0xFFFF;
-uint8_t macDSN;
-bool macGTSPermit = (bool)true;
-uint8_t macMaxCSMABackoffs = 4;
-uint8_t macMinBE = 3;
-uint16_t macPANId = (uint16_t)0xFFFF;
-bool macPromiscuousMode = (bool)false;
-bool macRxOnWhenIdle = (bool)false;
-uint16_t macShortAddress = (uint16_t)0xFFFF;
-uint8_t macSuperframeOrder = (uint8_t)15;
-uint16_t macTransactionPersistenceTime = (uint16_t)0x01F4;
+static uint8_t macAckWaitDuration = (uint8_t)54;
+static bool macAssociationPermit = (bool)false;
+static bool macAutoRequest = (bool)true;
+static bool macBattLifeExt = (bool)false;
+static uint8_t macBattLifeExtPeriods = (uint8_t)6;
+static uint8_t *macBeaconPayload = NULL;
+static uint8_t macBeaconPayloadLength = (uint8_t)0;
+static uint8_t macBeaconOrder = (uint8_t)15;
+static uint32_t macBeaconTxTime = (uint32_t)0x00;
+static uint8_t macBSN;
+static uint64_t macCoordExtendedAddress;
+static uint16_t macCoordShortAddress = (uint16_t)0xFFFF;
+static uint8_t macDSN;
+static bool macGTSPermit = (bool)true;
+static uint8_t macMaxCSMABackoffs = 4;
+static uint8_t macMinBE = 3;
+static uint16_t macPANId = (uint16_t)0xFFFF;
+static bool macPromiscuousMode = (bool)false;
+static bool macRxOnWhenIdle = (bool)false;
+static uint16_t macShortAddress = (uint16_t)0xFFFF;
+static uint8_t macSuperframeOrder = (uint8_t)15;
+static uint16_t macTransactionPersistenceTime = (uint16_t)0x01F4;
 
 /*!<
  *!< @brief MAC PIB security attributes
  *!< */
-uint8_t *macACLEntryDescriptorSet = NULL;
-uint8_t macACLEntryDescriptorSetSize = (uint8_t)0x00;
-bool macDefaultSecurity = (bool)false;
-uint8_t macDefaultSecurityMaterialLength = (uint8_t)0x15;
-uint8_t macDefaultSecurityMaterial[ACLSecurityMaterialLengthMax] = "";
-uint8_t macDefaultSecuritySuite = (uint8_t)0x00;
-uint8_t macSecurityMode = (uint8_t)0x00;
+static uint8_t *macACLEntryDescriptorSet = NULL;
+static uint8_t macACLEntryDescriptorSetSize = (uint8_t)0x00;
+static bool macDefaultSecurity = (bool)false;
+static uint8_t macDefaultSecurityMaterialLength = (uint8_t)0x15;
+static uint8_t macDefaultSecurityMaterial[ACLSecurityMaterialLengthMax] = "";
+static uint8_t macDefaultSecuritySuite = (uint8_t)0x00;
+static uint8_t macSecurityMode = (uint8_t)0x00;
 
 /*!<
  *!< @brief Elements of ACL entry descriptor
  *!< */
-uint64_t ACLExtendedAddress;
-uint16_t ACLShortAddress = (uint16_t)0xFFFF;
-uint16_t ACLPANId;
-uint8_t ACLSecurityMaterialLength = (uint8_t)21;
-uint8_t ACLSecurityMaterial[ACLSecurityMaterialLengthMax] = "";
-uint8_t ACLSecuritySuite = (uint8_t)0x00;
+static uint64_t ACLExtendedAddress;
+static uint16_t ACLShortAddress = (uint16_t)0xFFFF;
+static uint16_t ACLPANId;
+static uint8_t ACLSecurityMaterialLength = (uint8_t)21;
+static uint8_t ACLSecurityMaterial[ACLSecurityMaterialLengthMax] = "";
+static uint8_t ACLSecuritySuite = (uint8_t)0x00;
 
 uint8_t u8GlbSequenceCnt = 0;
 /**************Public Variable Definitions***************/
@@ -135,64 +134,128 @@ static void IEEE_802_15_4_MacDataRequest(uint8_t SrcAddrMode,
     uint8_t index;
     /* Create a new instance of packet for transmition */
     IEEE_802_15_4_MacDataFrame_t dataFrame;
+    uint8_t dataFrameBytes[aMaxMACFrameSize];
+    IEEE_802_15_4_FrameCtrl lFrmCtrl;
+    uint8_t lDataShift = 0;
+    uint8_t lDataSize = 0;
 
     /* Specify that the request is the data request */
-    dataFrame.frameControl.Field.frameType = IEEE_802_15_4_FRAME_TYPE_DATA;
+    lFrmCtrl.Field.frameType = IEEE_802_15_4_FRAME_TYPE_DATA;
 
     if ((TxOptions & (uint8_t)0x0F) != (uint8_t)0x00)
     {
         if((TxOptions & IEEE_802_15_4_ACK_TRANSMISSION) != (uint8_t)0x00)
         {
-            dataFrame.frameControl.Field.ackRequest = (uint8_t)0x01;
+            lFrmCtrl.Field.ackRequest = (uint8_t)0x01;
         }
         if((TxOptions & IEEE_802_15_4_GTS_TRANSMISSION) != (uint8_t)0x00)
         {
-            dataFrame.frameControl.Field.ackRequest = (uint8_t)0x01;
+            lFrmCtrl.Field.ackRequest = (uint8_t)0x01;
         }
         else if((TxOptions & IEEE_802_15_4_INDIR_TRANSMISSION) != (uint8_t)0x00)
         {
-            dataFrame.frameControl.Field.intraPAN = (uint8_t)0x01;
+            lFrmCtrl.Field.intraPAN = (uint8_t)0x01;
         }
         if((TxOptions & IEEE_802_15_4_SE_TRANSMISSION) != (uint8_t)0x00)
         {
-            dataFrame.frameControl.Field.securityEnabled = (uint8_t)0x01;
+            lFrmCtrl.Field.securityEnabled = (uint8_t)0x01;
         }
         /* Addressing modes are set here for source and destination */
         if ((uint8_t)0x01 != SrcAddrMode && SrcAddrMode < (uint8_t)0x05)
         {
-            dataFrame.frameControl.Field.srcAddrMode = SrcAddrMode;
+            lFrmCtrl.Field.srcAddrMode = SrcAddrMode;
         }
         else
         {
             /* The review of this is required */
-            dataFrame.frameControl.Field.srcAddrMode = IEEE_802_15_4_NO_ADDR_FIELD;
+            lFrmCtrl.Field.srcAddrMode = IEEE_802_15_4_NO_ADDR_FIELD;
         }
         if ((uint8_t)0x01 != DstAddrMode && DstAddrMode < (uint8_t)0x05)
         {
-            dataFrame.frameControl.Field.dstAddrMode = DstAddrMode;
+            lFrmCtrl.Field.dstAddrMode = DstAddrMode;
         }
         else
         {
             /* The review of this is required */
-            dataFrame.frameControl.Field.dstAddrMode = IEEE_802_15_4_NO_ADDR_FIELD;
+            lFrmCtrl.Field.dstAddrMode = IEEE_802_15_4_NO_ADDR_FIELD;
+        }
+        /* Copy frame control to data buffer */
+        dataFrameBytes[lDataShift++] = (uint8_t)(lFrmCtrl.value>>8);
+        dataFrameBytes[lDataShift++] = (uint8_t)(lFrmCtrl.value&0xFF);
+
+        dataFrameBytes[lDataShift++] = u8GlbSequenceCnt++;
+
+        switch (lFrmCtrl.Field.dstAddrMode)
+        {
+        case IEEE_802_15_4_MAC_SHORT_ADDR_FIELD:
+            /* Copying the PAN ID */
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstPANId>>8);
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstPANId&0xFF);
+            /* Copying the short address */
+            dataFrameBytes[lDataShift++] = (uint8_t)((uint16_t)DstAddr>>8);
+            dataFrameBytes[lDataShift++] = (uint8_t)((uint16_t)DstAddr&0xFF);
+            break;
+        case IEEE_802_15_4_MAC_LONG_ADDR_FIELD:
+            /* Copying the PAN ID */
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstPANId>>8);
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstPANId&0xFF);
+            /* Copying the long address */
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstAddr>>56);
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstAddr>>48);
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstAddr>>40);
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstAddr>>32);
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstAddr>>24);
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstAddr>>16);
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstAddr>>8);
+            dataFrameBytes[lDataShift++] = (uint8_t)(DstAddr&0xFF);
+            break;
+        case IEEE_802_15_4_MAC_NO_ADDR_FIELD:
+        default:
+            break;
         }
 
-        dataFrame.dstPANID = DstPANId;
-        dataFrame.dstAddr = DstAddr;
-
-        dataFrame.srcPANID = SrcPANId;
-        dataFrame.srcAddr = SrcAddr;
+        switch (lFrmCtrl.Field.srcAddrMode)
+        {
+        case IEEE_802_15_4_MAC_SHORT_ADDR_FIELD:
+            /* Copying the PAN ID */
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcPANId>>8);
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcPANId&0xFF);
+            /* Copying the short address */
+            dataFrameBytes[lDataShift++] = (uint8_t)((uint16_t)SrcAddr>>8);
+            dataFrameBytes[lDataShift++] = (uint8_t)((uint16_t)SrcAddr&0xFF);
+            break;
+        case IEEE_802_15_4_MAC_LONG_ADDR_FIELD:
+            /* Copying the PAN ID */
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcPANId>>8);
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcPANId&0xFF);
+            /* Copying the long address */
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcAddr>>56);
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcAddr>>48);
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcAddr>>40);
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcAddr>>32);
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcAddr>>24);
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcAddr>>16);
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcAddr>>8);
+            dataFrameBytes[lDataShift++] = (uint8_t)(SrcAddr&0xFF);
+            break;
+        case IEEE_802_15_4_MAC_NO_ADDR_FIELD:
+        default:
+            break;
+        }
 
         for (index = 0; index < msduLength; ++index) {
-            dataFrame.payload[index] = msdu[index];
+            /*dataFrame.payload[index] = msdu[index];*/
+            dataFrameBytes[lDataShift+index] = msdu[index];
         }
 
+        lDataSize = lDataShift+1;
 
-        dataFrame.sequenceNumber = u8GlbSequenceCnt++;
+#if IEEE_802_15_4_CRC_MANUAL_CALC == true
+        // ToDo: Implementation of FCS calculation
+        dataFrameBytes[lDataShift] = IEEE_802_15_4_MAC_FCS_Calculation(&dataFrameBytes[0], lDataSize);
+#endif
 
-        phyMain.PLME_SAP.SET_TRX_STATE.Request(TX_ON);
-
-
+        phyMain.PD_SAP.DATA.Request(lDataSize, (IEEE_802_15_4_PSDU_t)&dataFrameBytes[0]);
 
     }
     else

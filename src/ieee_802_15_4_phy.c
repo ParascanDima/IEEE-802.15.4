@@ -33,13 +33,6 @@ IEEE_802_15_4_PhyTxPower_t phyTransmitPower;
 /*  PHY PIB attribute */
 uint8_t phyCCAMode;
 
-
-/*!<
- *!< @brief PHY constants
- *!< */
-const uint8_t aMaxPHYPacketSize = 127;
-const uint8_t aTurnaroundTime = 12;
-
 /*!<
  *!< @brief PHY Pointers to Chip specific config
  *!< */
@@ -113,7 +106,10 @@ static void IEEE_802_15_4_PhyDataRequest(uint8_t psduLength, IEEE_802_15_4_PSDU_
             if (DataRequestChipSpecificCallback != NULL)
             {
                 phyMain.PLME_SAP.SET_TRX_STATE.Request(TX_ON);
-                DataRequestChipSpecificCallback((uint8_t*)&phyPacket);
+                if (TX_ON == SetTrxStateConfirmation)
+                {
+                    DataRequestChipSpecificCallback((uint8_t*)&phyPacket);
+                }
             }
             DataConfirmation = TX_ON;
         }
@@ -343,9 +339,16 @@ static void IEEE_802_15_4_GET_Confirm(IEEE_802_15_4_PHY_Enum_t status, IEEE_802_
  */
 static void IEEE_802_15_4_SET_TRX_STATE_Request(IEEE_802_15_4_PHY_Enum_t state)
 {
-    if (SetTrxStateRequestChipSpecificCallback != NULL)
+    if ((TX_ON == state) || (TRX_OFF == state) || (RX_ON == state) || (FORCE_TRX_OFF == state))
     {
-        SetTrxStateRequestChipSpecificCallback(state);
+        if (SetTrxStateRequestChipSpecificCallback != NULL)
+        {
+            SetTrxStateRequestChipSpecificCallback(state);
+        }
+    }
+    else
+    {
+        phyMain.PLME_SAP.SET_TRX_STATE.Confirm(BUSY_RX);
     }
 }
 

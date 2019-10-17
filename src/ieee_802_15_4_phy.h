@@ -17,7 +17,14 @@
 
 /***************************Public Macro Definitions********************************/
 
-#ifdef IEEE_802_15_4_2011_COMPLIANT
+/*!<
+ *!< @brief PHY constants
+ *!< */
+#define aMaxPHYPacketSize                              127
+#define aTurnaroundTime                                12
+
+
+#if IEEE_802_15_4_2011_COMPLIANT == true
 /*!<
  *!< @brief PHY PIB attributes number (per IEEE Std 802.15.4-2011 Table 71)
  *!< */
@@ -35,7 +42,7 @@
 
 /***************************Public Type Definitions********************************/
 
-#ifdef IEEE_802_15_4_2011_COMPLIANT
+#if IEEE_802_15_4_2011_COMPLIANT == true
 /*!<
  *!< @brief PHY Channel description (per IEEE Std 802.15.4-2011 Table 71 )
  *!< */
@@ -302,7 +309,7 @@ typedef void (*PLME_GET_Confirm_t)(IEEE_802_15_4_PHY_Enum_t status, IEEE_802_15_
 
 
 
-#ifndef IEEE_802_15_4_2011_COMPLIANT
+#if IEEE_802_15_4_2011_COMPLIANT == false
 /*!<
  *!< @brief PHY management service description (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-GET))
  *!< */
@@ -350,7 +357,7 @@ typedef struct
 }IEEE_802_15_4_PLME_SET_TRX_STATE_t;
 
 
-#ifndef IEEE_802_15_4_2011_COMPLIANT
+#if IEEE_802_15_4_2011_COMPLIANT == false
 
 /*!<
  *!< @brief PLME-SET.request type (per IEEE Std 802.15.4-2003   6.2.2 PHY management service (PLME-SET))
@@ -394,7 +401,7 @@ typedef struct
     /* PLME-ED primitive */
     IEEE_802_15_4_PLME_ED_t ED;
 
-#ifndef IEEE_802_15_4_2011_COMPLIANT
+#if IEEE_802_15_4_2011_COMPLIANT == false
 
     /* PLME-GET primitive */
     IEEE_802_15_4_PLME_GET_t GET;

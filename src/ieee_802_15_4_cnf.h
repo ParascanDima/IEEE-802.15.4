@@ -15,8 +15,10 @@
 
 /***************************Public Macro Definitions********************************/
 
-/*#define IEEE_802_15_4_2011_COMPLIANT */
-#define IEEE_802_15_4_2003_COMPLIANT
+#define IEEE_802_15_4_2011_COMPLIANT false
+#define IEEE_802_15_4_2003_COMPLIANT true
+
+#define IEEE_802_15_4_CRC_MANUAL_CALC false
 
 #ifndef NULL
 #define NULL ((void*)0)

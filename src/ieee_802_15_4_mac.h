@@ -13,6 +13,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "ieee_802_15_4_phy.h"
 #include "ieee_802_15_4_cnf.h"
 
 /***************************Public Macro Definitions********************************/
@@ -29,7 +30,7 @@
 #define IEEE_802_15_4_MAX_SRC_ADDR_BYTES                (8)
 #define IEEE_802_15_4_FCS_BYTES                         (2)
 
-#ifdef IEEE_802_15_4_2011_COMPLIANT
+#if IEEE_802_15_4_2011_COMPLIANT == true
 #define IEEE_802_15_4_MAX_AUX_SECURITY_HEADER_BYTES     (8 + 4 + 2)
 #endif
 
@@ -67,7 +68,7 @@
 #define IEEE_802_15_4_LONG_ADDR_FIELD                   (3) // 11 Address field contains a 64-bit extended address.
 
 
-#ifdef IEEE_802_15_4_2011_COMPLIANT
+#if IEEE_802_15_4_2011_COMPLIANT == true
 /*!<
  *!< @brief Security levels described in Table 58 of IEEE Std 802.15.4-2011
  *!< */
@@ -89,6 +90,13 @@
 #define IEEE_802_15_4_KEY_ID_MODE_8BYTE                 (0x03)
 #endif
 
+/*!<
+ *!< @brief source and destination addressing modes, IEEE 802.15.4-2006 Table 80
+ *!< */
+#define IEEE_802_15_4_MAC_NO_ADDR_FIELD       (0) // 00 PAN identifier and address fields are not present.
+/*#define RESERVED_FIELD    (1)    01 Reserved. */
+#define IEEE_802_15_4_MAC_SHORT_ADDR_FIELD    (2) // 10 Address field contains a 16-bit short address.
+#define IEEE_802_15_4_MAC_LONG_ADDR_FIELD     (3) // 11 Address field contains a 64-bit extended address.
 
 /*!<
  *!< @brief Description of transmission options on request
@@ -106,13 +114,13 @@
 #define aBaseSuperframeDuration                         (uint16_t)960
 #define aMaxBE                                          (uint8_t)5
 #define aMaxBeaconOverhead                              (uint8_t)75
-#define aMaxBeaconPayloadLength                         (uint8_t)52
+#define aMaxBeaconPayloadLength                         (uint8_t)(aMaxPHYPacketSize-aMaxBeaconOverhead)
 #define aGTSDescPersistenceTime                         (uint8_t)4
 #define aMaxFrameOverhead                               (uint8_t)25
 #define aMaxFrameResponseTime                           (uint16_t)1220
 #define aMaxFrameRetries                                (uint8_t)3
 #define aMaxLostBeacons                                 (uint8_t)4
-#define aMaxMACFrameSize                                (uint8_t)102
+#define aMaxMACFrameSize                                (uint8_t)(aMaxPHYPacketSize-aMaxFrameOverhead)
 #define aMaxSIFSFrameSize                               (uint8_t)18
 #define aMinCAPLength                                   (uint16_t)440
 #define aMinLIFSPeriod                                  (uint8_t)40
@@ -211,7 +219,7 @@ typedef union {
         unsigned    intraPAN        :1;       /* Specifies whether the MAC frame is to be sent within the same PAN (intra-PAN) or to another PAN (inter-PAN)    */
         unsigned    /*reserved*/    :3;       /* reserved by IEEE Std 802.15.4-2003                                                                             */
         unsigned    dstAddrMode     :2;       /* Specifies the destination addressing type (short addressing or long addressing)                                */
-#ifdef IEEE_802_15_4_2011_COMPLIANT
+#if IEEE_802_15_4_2011_COMPLIANT == true
         unsigned    frameVersion    :2;       /* The Frame Version field specifies the version number corresponding to the frame                                */
 #else
         unsigned    /*reserved*/    :2;       /* reserved by IEEE Std 802.15.4-2003                                                                             */
@@ -221,7 +229,7 @@ typedef union {
 }IEEE_802_15_4_FrameCtrl;
 
 
-#ifdef IEEE_802_15_4_2011_COMPLIANT
+#if IEEE_802_15_4_2011_COMPLIANT == true
 /*!<
  *!< @brief Security control type (per IEEE Std 802.15.4-2011 Figure 63)
  *!< */
@@ -414,12 +422,12 @@ typedef struct
     uint64_t    srcAddr;
 
     /* ===================== MAC PAYLOAD ===================== */
-    uint8_t    payload[aMaxMACFrameSize];
+    uint8_t *   payload;
 
     /* ========================= MFR ========================= */
     uint16_t    fcs;
 
-#ifdef IEEE_802_15_4_2011_COMPLIANT
+#if IEEE_802_15_4_2011_COMPLIANT == true
     IEEE_802_15_4_AuxSecurityHeaderType auxSecurityHeader;
 #endif
 
@@ -465,6 +473,60 @@ typedef struct
     uint16_t    fcs;
 
 } IEEE_802_15_4_MacCommandFrame_t;
+
+
+/*!<
+ *!< @brief MCPS-Data.request type (per IEEE Std 802.15.4-2003   7.1.1.1 MCPS-DATA.request)
+ *!< */
+typedef void (*MCPS_Data_Request_t)(uint8_t SrcAddrMode,
+                                    uint16_t SrcPANId,
+                                    uint64_t SrcAddr,
+                                    uint8_t DstAddrMode,
+                                    uint16_t DstPANId,
+                                    uint64_t DstAddr,
+                                    uint8_t msduLength,
+                                    uint8_t* msdu,
+                                    uint8_t msduHandle,
+                                    uint8_t TxOptions);
+
+
+/*!<
+ *!< @brief MCPS-Data.confirm type (per IEEE Std 802.15.4-2003   7.1.1.2 MCPS-DATA.confirm)
+ *!< */
+typedef void (*MCPS_Data_Confirm_t)(uint8_t msduHandle,
+                                    GeneralMacRequestStatusType status);
+
+
+/*!<
+ *!< @brief MCPS-Data.indication type (per IEEE Std 802.15.4-2003   7.1.1.3 MCPS-DATA.indication)
+ *!< */
+typedef void (*MCPS_Data_Indication_t)(uint8_t SrcAddrMode,
+                                       uint16_t SrcPANId,
+                                       uint64_t SrcAddr,
+                                       uint8_t DstAddrMode,
+                                       uint16_t DstPANId,
+                                       uint64_t DstAddr,
+                                       uint8_t msduLength,
+                                       uint8_t* msdu,
+                                       uint8_t mpduLinkQuality,
+                                       bool SecurityUse,
+                                       uint8_t ACLEntry);
+
+
+/*!<
+ *!< @brief MCPS-Data service description (per IEEE Std 802.15.4-2003   7.1.1 MAC data service (MCPS-DATA))
+ *!< */
+typedef struct
+{
+    /* Rquests the transfer of a data SPDU (i.e., MSDU) from a local SSCS entity to a single peer SSCS entity. */
+    MCPS_Data_Request_t Request;
+
+    /* Reports the results of a request to transfer a data SPDU (MSDU) from a local SSCS entity to a single peer SSCS entity. */
+    MCPS_Data_Confirm_t Confirm;
+
+    /* Indicates the transfer of a data SPDU (i.e., MSDU) from the MAC sublayer to the local SSCS entity. */
+    MCPS_Data_Indication_t Indication;
+}IEEE_802_15_4_MCPS_DATA_t;
 
 /***************************Public Data Definitions********************************/
 
