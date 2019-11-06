@@ -12,13 +12,49 @@
 
 /**************Private Macro Definitions*****************/
 
+#define IEEE_802_15_4_MAC_MAX_PEND_TRANSACTIONS            (uint8_t)0x0A
+#define IEEE_802_15_4_MAC_FIRST_IN_QUEUE                   (&transactionQueue[0])
 
+#define IEEE_802_15_4_MAC_DATA_ACK_REQUIRED                true
+#define IEEE_802_15_4_MAC_DATA_ACK_NOT_REQUIRED            false
 
 /**************Private Type Definitions******************/
+/*!<
+ *!< @brief Is not a part of IEEE Std 802.15.4, defined for MAC task to manage the MAC functionality
+ *!< */
+typedef struct
+{
+    uint32_t u32MacTaskCount;
+    uint8_t  transactionsInQueue;
+}IEEE_802_15_4_MAC_GeneralState_t;
 
-
+/*!<
+ *!< @brief Transaction type is not described in IEEE Std 802.15.4, but is necessary for determining the errors for each transaction
+ *!< */
+typedef struct
+{
+    uint32_t transactionTime;              /* Time of transaction in ticks of MAC task for detecting timeouts                                 */
+    uint8_t msduHandle;                     /* Number which is generated on each transaction                                                   */
+    uint8_t transactionsType;              /* Describes if the transaction was data or MAC command                                            */
+    bool isAckRequired;                    /* Describes if the acknowledge is required for this transaction for determining transaction error */
+}IEEE_802_15_4_PendTransaction_t;
 
 /**************Private Variable Definitions**************/
+
+/*!<
+ *!< @brief MAC general state
+ *!< */
+static IEEE_802_15_4_MAC_GeneralState_t IEEE_802_15_4_Mac_State =
+        {
+         .transactionsInQueue = 0,
+         .u32MacTaskCount = 0,
+        };
+
+
+/*!<
+ *!< @brief Transaction Queue is not described in IEEE Std 802.15.4 standard
+ *!< */
+static IEEE_802_15_4_PendTransaction_t transactionQueue[IEEE_802_15_4_MAC_MAX_PEND_TRANSACTIONS];
 
 /*!<
  *!< @brief Constants that are not defined by the IEEE Std 802.15.4-2003 but are upper side of threshold
@@ -73,7 +109,6 @@ static uint8_t ACLSecurityMaterialLength = (uint8_t)21;
 static uint8_t ACLSecurityMaterial[ACLSecurityMaterialLengthMax] = "";
 static uint8_t ACLSecuritySuite = (uint8_t)0x00;
 
-uint8_t u8GlbSequenceCnt = 0;
 /**************Public Variable Definitions***************/
 
 const uint64_t aExtendedAddress __attribute__((weak)) = (uint64_t)0xFFFFFFFFFFFFFFFF;
@@ -81,8 +116,70 @@ const uint64_t aExtendedAddress __attribute__((weak)) = (uint64_t)0xFFFFFFFFFFFF
 /**************Private Function Definitions**************/
 
 
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_AddPendingTransaction
+ *!< @brief                  : Adding the transaction to pending queue
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input : msduHandle       -
+ *!<                         : transactionsType -
+ *!<                         : isAckRequired    -
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : Return the MSDU handler number.
+ *!< Critical section YES/NO : NO
+ */
+void IEEE_802_15_4_AddPendingTransaction(uint8_t msduHandle, uint8_t transactionsType, bool isAckRequired)
+{
+    uint8_t u8TrnsCount;
+
+    u8TrnsCount = IEEE_802_15_4_Mac_State.transactionsInQueue;
+
+    if (IEEE_802_15_4_MAC_MAX_PEND_TRANSACTIONS < u8TrnsCount)
+    {
+        transactionQueue[u8TrnsCount].transactionsType = transactionsType;
+        transactionQueue[u8TrnsCount].isAckRequired = isAckRequired;
+
+        transactionQueue[u8TrnsCount].msduHandle = msduHandle;
+        transactionQueue[u8TrnsCount].transactionTime = IEEE_802_15_4_Mac_State.u32MacTaskCount;
+
+    }
+}
 
 
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_RemovePendingTransaction
+ *!< @brief                  : Removing the transaction to pending queue
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input : msduHandle       -
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : Return the MSDU handler number.
+ *!< Critical section YES/NO : NO
+ */
+void IEEE_802_15_4_RemovePendingTransaction(uint8_t msduHandle)
+{
+    uint8_t u8IndexLcl;
+    bool msduHandleFoundLcl = false;
+
+    for (u8IndexLcl = 0; (u8IndexLcl < IEEE_802_15_4_Mac_State.transactionsInQueue); ++u8IndexLcl)
+    {
+        if (msduHandleFoundLcl == false)
+        {
+            msduHandleFoundLcl = (transactionQueue[u8IndexLcl].msduHandle == msduHandle);
+        }
+        else
+        {
+            transactionQueue[u8IndexLcl] = transactionQueue[u8IndexLcl+1];
+        }
+    }
+
+    if ((IEEE_802_15_4_Mac_State.transactionsInQueue != 0) && (msduHandleFoundLcl == true))
+    {
+        IEEE_802_15_4_Mac_State.transactionsInQueue--;
+    }
+}
 
 /**************Public Function Definitions***************/
 
@@ -133,7 +230,6 @@ static void IEEE_802_15_4_MacDataRequest(uint8_t SrcAddrMode,
 {
     uint8_t index;
     /* Create a new instance of packet for transmition */
-    IEEE_802_15_4_MacDataFrame_t dataFrame;
     uint8_t dataFrameBytes[aMaxMACFrameSize];
     IEEE_802_15_4_FrameCtrl lFrmCtrl;
     uint8_t lDataShift = 0;
@@ -183,7 +279,7 @@ static void IEEE_802_15_4_MacDataRequest(uint8_t SrcAddrMode,
         dataFrameBytes[lDataShift++] = (uint8_t)(lFrmCtrl.value>>8);
         dataFrameBytes[lDataShift++] = (uint8_t)(lFrmCtrl.value&0xFF);
 
-        dataFrameBytes[lDataShift++] = u8GlbSequenceCnt++;
+        dataFrameBytes[lDataShift++] = macDSN++;
 
         switch (lFrmCtrl.Field.dstAddrMode)
         {
@@ -244,16 +340,17 @@ static void IEEE_802_15_4_MacDataRequest(uint8_t SrcAddrMode,
         }
 
         for (index = 0; index < msduLength; ++index) {
-            /*dataFrame.payload[index] = msdu[index];*/
             dataFrameBytes[lDataShift+index] = msdu[index];
         }
 
         lDataSize = lDataShift+1;
 
 #if IEEE_802_15_4_CRC_MANUAL_CALC == true
-        // ToDo: Implementation of FCS calculation
+        /* ToDo: Implementation of FCS calculation */
         dataFrameBytes[lDataShift] = IEEE_802_15_4_MAC_FCS_Calculation(&dataFrameBytes[0], lDataSize);
 #endif
+
+        (void)IEEE_802_15_4_AddPendingTransaction(msduHandle, IEEE_802_15_4_FRAME_TYPE_DATA, (bool)lFrmCtrl.Field.ackRequest);
 
         phyMain.PD_SAP.DATA.Request(lDataSize, (IEEE_802_15_4_PSDU_t)&dataFrameBytes[0]);
 
@@ -281,7 +378,7 @@ static void IEEE_802_15_4_MacDataRequest(uint8_t SrcAddrMode,
 static void IEEE_802_15_4_MacDataConfirm(uint8_t msduHandle,
                                          GeneralMacRequestStatusType status)
 {
-
+    IEEE_802_15_4_RemovePendingTransaction();
 }
 
 
