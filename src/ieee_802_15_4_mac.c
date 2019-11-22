@@ -109,6 +109,12 @@ static uint8_t ACLSecurityMaterialLength = (uint8_t)21;
 static uint8_t ACLSecurityMaterial[ACLSecurityMaterialLengthMax] = "";
 static uint8_t ACLSecuritySuite = (uint8_t)0x00;
 
+/*!<
+ *!< @brief MAC interfaces to upper layers
+ *!< */
+
+
+
 /**************Public Variable Definitions***************/
 
 const uint64_t aExtendedAddress __attribute__((weak)) = (uint64_t)0xFFFFFFFFFFFFFFFF;
@@ -182,6 +188,202 @@ void IEEE_802_15_4_RemovePendingTransaction(uint8_t msduHandle)
 }
 
 /**************Public Function Definitions***************/
+
+/* Interfaces to PHY layer */
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_ToMacDataConfirmation
+ *!< @brief                  : Interface to PHY Data request confirmation
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input : status - result of request
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+void IEEE_802_15_4_ToMacDataConfirmation(IEEE_802_15_4_PHY_Enum_t status)
+{
+    uint8_t locMsduHndl = IEEE_802_15_4_MAC_FIRST_IN_QUEUE->msduHandle;
+    GeneralMacRequestStatusType reqStatus;
+
+    switch(status)
+    {
+    case PHY_SUCCESS:
+        reqStatus = SUCCESS;
+        break;
+    case RX_ON:
+        reqStatus = CHANNEL_ACCESS_FAILURE;
+        break;
+    case TRX_OFF:
+        reqStatus = CHANNEL_ACCESS_FAILURE;
+        break;
+    default:
+        reqStatus = INVALID_PARAMETER;
+        break;
+    }
+
+    IEEE_802_15_4_MacDataConfirm(locMsduHndl, reqStatus);
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_ToMacDataIndication
+ *!< @brief                  : Callback interface for PHY layer to indicate MAC layer
+ *!<                         : of incoming request
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input : psduLength - length of incoming data
+ *!<                         : psdu - payload of PHY layer
+ *!<                         : ppduLinkQuality - quality of signal
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  : -
+ *!< Critical section YES/NO : NO
+ */
+void IEEE_802_15_4_ToMacDataIndication(uint8_t psduLength, uint8_t* psdu, uint8_t ppduLinkQuality)
+{
+    /* New frame */
+    IEEE_802_15_4_MacDataFrame_t locFrame;
+    /* Define the MHR size with minimum size of 3 bytes (2 bytes are frame control and 1 byte is sequence number) */
+    uint8_t locMhrSize = 3;
+    /* MFR size is constant for data frame */
+    const uint8_t locMfrSize = 2;
+    /* Read first 2 bytes of frame as these are frame control bits */
+    locFrame.frameControl.value = (uint16_t)((psdu[0] << 8) | psdu[1]);
+
+    locFrame.sequenceNumber = psdu[2];
+
+    switch (locFrame.frameControl.Field.dstAddrMode)
+    {
+    case IEEE_802_15_4_MAC_NO_ADDR_FIELD:
+        break;
+    case IEEE_802_15_4_MAC_SHORT_ADDR_FIELD:
+
+        break;
+    case IEEE_802_15_4_MAC_LONG_ADDR_FIELD:
+        break;
+    default:
+        break;
+    }
+
+    switch (locFrame.frameControl.Field.srcAddrMode)
+    {
+    case IEEE_802_15_4_MAC_NO_ADDR_FIELD:
+        break;
+    case IEEE_802_15_4_MAC_SHORT_ADDR_FIELD:
+        break;
+    case IEEE_802_15_4_MAC_LONG_ADDR_FIELD:
+        break;
+    default:
+        break;
+    }
+
+    IEEE_802_15_4_MacDataIndication(locFrame.frameControl.Field.srcAddrMode,
+                                    locFrame.srcPANID,
+                                    locFrame.srcAddr,
+                                    locFrame.frameControl.Field.dstAddrMode,
+                                    locFrame.dstPANID,
+                                    locFrame.dstAddr,
+                                    (psduLength - locMhrSize - locMfrSize),
+                                    &psdu[locMhrSize],
+                                    ppduLinkQuality,
+                                    locFrame.frameControl.Field.securityEnabled,
+                                    0x08/* Temporar stub */);
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_ToMacCcaConfirmation
+ *!< @brief                  : MAC confirmation sent by PHY to confirm MAC CCA request
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input :
+ *!<                         :
+ *!<                         :
+ *!<                   Output:
+ *!< Return                  :
+ *!< Critical section YES/NO :
+ */
+void IEEE_802_15_4_ToMacCcaConfirmation(IEEE_802_15_4_PHY_Enum_t status)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_ToMacEdConfirmation
+ *!< @brief                  : MAC confirmation sent by PHY to confirm MAC ED request
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input :
+ *!<                         :
+ *!<                         :
+ *!<                   Output:
+ *!< Return                  :
+ *!< Critical section YES/NO :
+ */
+void IEEE_802_15_4_ToMacEdConfirmation(IEEE_802_15_4_PHY_Enum_t status, uint8_t* EnergyLevel)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_ToMacGetConfirmation
+ *!< @brief                  : MAC confirmation sent by PHY to confirm MAC GET request
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input :
+ *!<                         :
+ *!<                         :
+ *!<                   Output:
+ *!< Return                  :
+ *!< Critical section YES/NO :
+ */
+void IEEE_802_15_4_ToMacGetConfirmation(IEEE_802_15_4_PHY_Enum_t status, IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_t* PIBAttributeValue)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_ToMacSetTrxStateConfirmation
+ *!< @brief                  : MAC confirmation sent by PHY to confirm MAC SET_TRX_STATE request
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input :
+ *!<                         :
+ *!<                         :
+ *!<                   Output:
+ *!< Return                  :
+ *!< Critical section YES/NO :
+ */
+void IEEE_802_15_4_ToMacSetTrxStateConfirmation(IEEE_802_15_4_PHY_Enum_t status)
+{
+
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_ToMacSetConfirmation
+ *!< @brief                  : MAC confirmation sent by PHY to confirm MAC SET request
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input :
+ *!<                         :
+ *!<                         :
+ *!<                   Output:
+ *!< Return                  :
+ *!< Critical section YES/NO :
+ */
+void IEEE_802_15_4_ToMacSetConfirmation(IEEE_802_15_4_PHY_Enum_t status, IEEE_802_15_4_PIB_ID_t PIBAttribID)
+{
+
+}
+
+
 
 /****************************************************************************************
  *!< Function                : IEEE_802_15_4_MacDataRequest
@@ -378,7 +580,7 @@ static void IEEE_802_15_4_MacDataRequest(uint8_t SrcAddrMode,
 static void IEEE_802_15_4_MacDataConfirm(uint8_t msduHandle,
                                          GeneralMacRequestStatusType status)
 {
-    IEEE_802_15_4_RemovePendingTransaction();
+    IEEE_802_15_4_RemovePendingTransaction(msduHandle);
 }
 
 

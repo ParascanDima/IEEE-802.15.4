@@ -528,6 +528,37 @@ typedef struct
     MCPS_Data_Indication_t Indication;
 }IEEE_802_15_4_MCPS_DATA_t;
 
+
+/*!<
+ *!< @brief MAC link with upper layer structure
+ *!< */
+typedef struct
+{
+    void (*DataConfirm)();                  /*   */
+    void (*DataIndication)();               /*   */
+    void (*PurgeConfirm)();                 /*   */
+    void (*AssocIndication)();              /*   */
+    void (*AssocResponse)();                /*   */
+    void (*AssocConfirm)();                 /*   */
+    void (*DisassocIndication)();           /*   */
+    void (*DisassocConfirm)();              /*   */
+    void (*BeaconNotifIndication)();        /*   */
+    void (*GetConfirm)();                   /*   */
+    void (*GtsIndication)();                /*   */
+    void (*GtsConfirm)();                   /*   */
+    void (*OrphanIndication)();             /*   */
+    void (*OrphanResponse)();               /*   */
+    void (*ResetConfirm)();                 /*   */
+    void (*RxEnaConfirm)();                 /*   */
+    void (*ScanConfirm)();                  /*   */
+    void (*CommStatusIndication)();         /*   */
+    void (*SetConfirm)();                   /*   */
+    void (*StartConfirm)();                 /*   */
+    void (*SyncLossIndication)();           /*   */
+    void (*PollConfirm)();                  /*   */
+
+}IEEE_802_15_4_UpperLayerCnfStruct;
+
 /***************************Public Data Definitions********************************/
 
 extern const uint64_t aExtendedAddress;

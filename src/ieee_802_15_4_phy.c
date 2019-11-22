@@ -34,12 +34,12 @@ IEEE_802_15_4_PhyTxPower_t phyTransmitPower;
 uint8_t phyCCAMode;
 
 /*!<
- *!< @brief PHY Pointers to Chip specific config
+ *!< @brief PHY Pointers to Chip specific config and interfaces to upper layers
  *!< */
 voidFuncPtr DataRequestChipSpecificCallback = NULL;
 PD_Data_Confirm_t DataConfirmationCallback = NULL;
 IEEE_802_15_4_PHY_Enum_t DataConfirmation = IDLE;
-PD_Data_Indication_t DataIndicationMacCallback = NULL;
+PD_Data_Indication_t DataIndicationCallback = NULL;
 
 PLME_CCA_Request_t CcaRequestChipSpecificCallback = NULL;
 PLME_CCA_Confirm_t CcaConfirmCallback = NULL;
@@ -132,7 +132,7 @@ static void IEEE_802_15_4_PhyDataRequest(uint8_t psduLength, IEEE_802_15_4_PSDU_
  *!<                         : local MAC sublayer entity to a peer MAC sublayer entity
  *!<                         : (per IEEE Std 802.15.4-2003   6.2.1.2 PD-DATA.confirm)
  *!< Parameters              :
- *!<                   Input : -
+ *!<                   Input : status - result of request
  *!<                   Output: -
  *!< Return                  : The result of the request to transmit a packet.
  *!< Critical section YES/NO : NO
@@ -164,9 +164,9 @@ static void IEEE_802_15_4_PhyDataIndication(uint8_t psduLength, uint8_t* psdu, u
 {
     if (psduLength != 0 && psduLength <= aMaxPHYPacketSize)
     {
-        if (DataIndicationMacCallback != NULL)
+        if (DataIndicationCallback != NULL)
         {
-            DataIndicationMacCallback(psduLength, psdu, ppduLinkQuality);
+            DataIndicationCallback(psduLength, psdu, ppduLinkQuality);
         }
     }
 }
@@ -552,7 +552,7 @@ void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEE
                         break;
 
                     case enIndication:
-                        DataIndicationMacCallback = (PD_Data_Indication_t)func;
+                        DataIndicationCallback = (PD_Data_Indication_t)func;
                         break;
 
                     default:
