@@ -18,6 +18,10 @@
 #define IEEE_802_15_4_MAC_DATA_ACK_REQUIRED                true
 #define IEEE_802_15_4_MAC_DATA_ACK_NOT_REQUIRED            false
 
+#define IEEE_802_15_4_MAC_SEQUENCE_NUMBER_INDEX            (uint8_t)2
+#define IEEE_802_15_4_MAC_BEACON_SRC_PANID_INDEX           (uint8_t)3
+
+
 /**************Private Type Definitions******************/
 /*!<
  *!< @brief Is not a part of IEEE Std 802.15.4, defined for MAC task to manage the MAC functionality
@@ -243,53 +247,157 @@ void IEEE_802_15_4_ToMacDataConfirmation(IEEE_802_15_4_PHY_Enum_t status)
  */
 void IEEE_802_15_4_ToMacDataIndication(uint8_t psduLength, uint8_t* psdu, uint8_t ppduLinkQuality)
 {
-    /* New frame */
-    IEEE_802_15_4_MacDataFrame_t locFrame;
+    IEEE_802_15_4_FrameCtrl   locFrameControl;
+
     /* Define the MHR size with minimum size of 3 bytes (2 bytes are frame control and 1 byte is sequence number) */
     uint8_t locMhrSize = 3;
     /* MFR size is constant for data frame */
     const uint8_t locMfrSize = 2;
     /* Read first 2 bytes of frame as these are frame control bits */
-    locFrame.frameControl.value = (uint16_t)((psdu[0] << 8) | psdu[1]);
+    locFrameControl.value = (uint16_t)((psdu[0] << 8) | psdu[1]);
 
-    locFrame.sequenceNumber = psdu[2];
-
-    switch (locFrame.frameControl.Field.dstAddrMode)
+    switch (locFrameControl.Field.frameType)
     {
-    case IEEE_802_15_4_MAC_NO_ADDR_FIELD:
-        break;
-    case IEEE_802_15_4_MAC_SHORT_ADDR_FIELD:
+    case IEEE_802_15_4_FRAME_TYPE_BEACON:
+    {
+        /* New beacon frame */
+        IEEE_802_15_4_MacBeaconFrame_t locBcnFrame;
+        /* Copy frame control to new frame */
+        locBcnFrame.frameControl.value = locFrameControl.value;
+        /* Read sequence counter from received frame */
+        locBcnFrame.sequenceNumber = psdu[IEEE_802_15_4_MAC_SEQUENCE_NUMBER_INDEX];
+        /* The addressing fields shall comprise only source address fields
+         * PANID has static length just address mode should be determined */
+        locBcnFrame.srcPANID = (uint16_t)((psdu[IEEE_802_15_4_MAC_SEQUENCE_NUMBER_INDEX+1] << 8) |
+                psdu[IEEE_802_15_4_MAC_SEQUENCE_NUMBER_INDEX+2]);
+        locMhrSize += 2;
+        switch(locBcnFrame.frameControl.Field.srcAddrMode)
+        {
+        case IEEE_802_15_4_MAC_SHORT_ADDR_FIELD:
+            locMhrSize += 2;
+            locBcnFrame.srcAddr
+            break;
+        case IEEE_802_15_4_MAC_LONG_ADDR_FIELD:
+            break;
+        }
 
-        break;
-    case IEEE_802_15_4_MAC_LONG_ADDR_FIELD:
-        break;
-    default:
-        break;
+
+    }
+    break;
+    case IEEE_802_15_4_FRAME_TYPE_ACK:
+    {
+        /* New acknoledge frame */
+        IEEE_802_15_4_MacAcknowledgeFrame_t locAckFrame;
+        /* Copy frame control to new frame */
+        locAckFrame.frameControl.value = locAckFrameControl.value;
+        /* Read sequence counter from received frame */
+        locAckFrame.sequenceNumber = psdu[IEEE_802_15_4_MAC_SEQUENCE_NUMBER_INDEX];
+
+        /* ToDo: Functionality for reset timeouts */
+    }
+    break;
+    case IEEE_802_15_4_FRAME_TYPE_MAC_COMMAND:
+    {
+        /* New command frame */
+        IEEE_802_15_4_MacCommandFrame_t locCmdFrame;
+        /* Copy frame control to new frame */
+        locCmdFrame.frameControl.value = locFrameControl.value;
+        /* Read sequence counter from received frame */
+        locCmdFrame.sequenceNumber = psdu[IEEE_802_15_4_MAC_SEQUENCE_NUMBER_INDEX];
+
+    }
+    break;
+    case IEEE_802_15_4_FRAME_TYPE_DATA:
+    {
+        /* New data frame */
+        IEEE_802_15_4_MacDataFrame_t locDataFrame;
+
+        /* Copy frame control to new frame */
+        locDataFrame.frameControl.value = locDataFrameControl.value;
+        /* Read sequence counter from received frame */
+        locDataFrame.sequenceNumber = psdu[IEEE_802_15_4_MAC_SEQUENCE_NUMBER_INDEX];
+
+        /* Check if frame is an intra PAN frame and either PAN ID is included in this frame or not */
+        if (true == locDataFrame.frameControl.Field.intraPAN)
+        {
+            /* The PAN ID is resent in this frame it means that MHR is at least 2 bytes longer */
+            locDataFrame.dstPANID = (uint16_t)((psdu[locMhrSize] << 8) | psdu[locMhrSize+1]);
+            locMhrSize += 2;
+        }
+        else
+        {
+            /* Frame was sent by device in the same PAN */
+            locDataFrame.dstPANID = 0x00;
+        }
+        /* As there are 3 cases of destination addressing modes each mode should be analyzed */
+        switch (locDataFrame.frameControl.Field.dstAddrMode)
+        {
+        case IEEE_802_15_4_MAC_NO_ADDR_FIELD:
+            /* No addressing mode is selected so the destination address is not present in this frame */
+            locDataFrame.dstAddr = 0x00;
+            break;
+        case IEEE_802_15_4_MAC_SHORT_ADDR_FIELD:
+            /* The short addressing mode is selected for this frame so the destination address is saved and MHR size is now 2 bytes longer */
+            locDataFrame.dstAddr = (uint64_t)((uint16_t)((psdu[locMhrSize] << 8) | psdu[locMhrSize+1]));
+            locMhrSize += 2;
+            break;
+        case IEEE_802_15_4_MAC_LONG_ADDR_FIELD:
+            /* The long addressing mode is selected for this frame so the destination address is saved and MHR size is now 8 bytes longer */
+            locDataFrame.dstAddr = (uint64_t)((psdu[locMhrSize] << (7*8)) | (psdu[locMhrSize+1] << (6*8)) | (psdu[locMhrSize+2] << (5*8)) |
+                    (psdu[locMhrSize+3] << (4*8)) | (psdu[locMhrSize+4] << (3*8)) | (psdu[locMhrSize+5] << (2*8)) | (psdu[locMhrSize+6] << (1*8)) | psdu[locMhrSize+7] );
+            locMhrSize += 8;
+            break;
+        default:
+            break;
+        }
+        /* Reverse check if an intra PAN is not set then source PAN ID is present in  this frame */
+        if (false == locDataFrame.frameControl.Field.intraPAN)
+        {
+            /* The PAN ID is resent in this frame it means that MHR is at least 2 bytes longer */
+            locDataFrame.srcPANID = (uint16_t)((psdu[locMhrSize] << 8) | psdu[locMhrSize+1]);
+            locMhrSize += 2;
+        }
+        else
+        {
+            /* Frame was sent by device in the same PAN */
+            locDataFrame.srcPANID = 0x00;
+        }
+        /* Same 3 ways for source addressing mode */
+        switch (locDataFrame.frameControl.Field.srcAddrMode)
+        {
+        case IEEE_802_15_4_MAC_NO_ADDR_FIELD:
+            /* No addressing mode is selected so the source address is not present in this frame */
+            locDataFrame.srcAddr = 0x00;
+            break;
+        case IEEE_802_15_4_MAC_SHORT_ADDR_FIELD:
+            /* The short addressing mode is selected for this frame so the source address is saved and MHR size is now 2 bytes longer */
+            locDataFrame.srcAddr = (uint64_t)((uint16_t)((psdu[locMhrSize] << 8) | psdu[locMhrSize+1]));
+            locMhrSize += 2;
+            break;
+        case IEEE_802_15_4_MAC_LONG_ADDR_FIELD:
+            /* The long addressing mode is selected for this frame so the source address is saved and MHR size is now 8 bytes longer */
+            locDataFrame.srcAddr = (uint64_t)((psdu[locMhrSize] << (7*8)) | (psdu[locMhrSize+1] << (6*8)) | (psdu[locMhrSize+2] << (5*8)) |
+                    (psdu[locMhrSize+3] << (4*8)) | (psdu[locMhrSize+4] << (3*8)) | (psdu[locMhrSize+5] << (2*8)) | (psdu[locMhrSize+6] << (1*8)) | psdu[locMhrSize+7] );
+            locMhrSize += 8;
+            break;
+        default:
+            break;
+        }
+        /* Now the meta data parsing finished, time to indicate upper layer (MAC) of incomming data */
+        IEEE_802_15_4_MacDataIndication(locDataFrame.frameControl.Field.srcAddrMode,
+                                        locDataFrame.srcPANID,
+                                        locDataFrame.srcAddr,
+                                        locDataFrame.frameControl.Field.dstAddrMode,
+                                        locDataFrame.dstPANID,
+                                        locDataFrame.dstAddr,
+                                        (psduLength - locMhrSize - locMfrSize),
+                                        &psdu[locMhrSize],
+                                        ppduLinkQuality,
+                                        locDataFrame.frameControl.Field.securityEnabled,
+                                        0x08/* Temporar stub */);
+    }
     }
 
-    switch (locFrame.frameControl.Field.srcAddrMode)
-    {
-    case IEEE_802_15_4_MAC_NO_ADDR_FIELD:
-        break;
-    case IEEE_802_15_4_MAC_SHORT_ADDR_FIELD:
-        break;
-    case IEEE_802_15_4_MAC_LONG_ADDR_FIELD:
-        break;
-    default:
-        break;
-    }
-
-    IEEE_802_15_4_MacDataIndication(locFrame.frameControl.Field.srcAddrMode,
-                                    locFrame.srcPANID,
-                                    locFrame.srcAddr,
-                                    locFrame.frameControl.Field.dstAddrMode,
-                                    locFrame.dstPANID,
-                                    locFrame.dstAddr,
-                                    (psduLength - locMhrSize - locMfrSize),
-                                    &psdu[locMhrSize],
-                                    ppduLinkQuality,
-                                    locFrame.frameControl.Field.securityEnabled,
-                                    0x08/* Temporar stub */);
 
 }
 
