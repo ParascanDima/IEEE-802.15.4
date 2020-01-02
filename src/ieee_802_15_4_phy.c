@@ -9,6 +9,7 @@
 /**************Imports***********************************/
 
 #include "ieee_802_15_4_phy.h"
+#include "ieee_802_15_4_phy_cfg.h"
 
 /**************Private Macro Definitions*****************/
 
@@ -17,7 +18,12 @@
 
 /**************Private Type Definitions******************/
 
-typedef void (*voidFuncPtr)(uint8_t*);
+IEEE_802_15_4_PHY_Enum_t DataConfirmation = IDLE;
+IEEE_802_15_4_PHY_Enum_t CcaConfirmation = IDLE;
+IEEE_802_15_4_PHY_Enum_t EdConfirmation = IDLE;
+IEEE_802_15_4_PHY_Enum_t GetConfirmation = IDLE;
+IEEE_802_15_4_PHY_Enum_t SetTrxStateConfirmation = IDLE;
+IEEE_802_15_4_PHY_Enum_t SetConfirmation = IDLE;
 
 /**************Private Variable Definitions**************/
 
@@ -32,41 +38,6 @@ IEEE_802_15_4_PhyTxPower_t phyTransmitPower;
 
 /*  PHY PIB attribute */
 uint8_t phyCCAMode;
-
-/*!<
- *!< @brief PHY Pointers to Chip specific config and interfaces to upper layers
- *!< */
-voidFuncPtr DataRequestChipSpecificCallback = NULL;
-PD_Data_Confirm_t DataConfirmationCallback = NULL;
-IEEE_802_15_4_PHY_Enum_t DataConfirmation = IDLE;
-PD_Data_Indication_t DataIndicationCallback = NULL;
-
-PLME_CCA_Request_t CcaRequestChipSpecificCallback = NULL;
-PLME_CCA_Confirm_t CcaConfirmCallback = NULL;
-IEEE_802_15_4_PHY_Enum_t CcaConfirmation = IDLE;
-
-PLME_ED_Request_t EdRequestChipSpecificCallback = NULL;
-PLME_ED_Confirm_t EdConfirmCallback = NULL;
-IEEE_802_15_4_PHY_Enum_t EdConfirmation = IDLE;
-
-PLME_GET_Request_t GetRequestChipSpecificCallback = NULL;
-PLME_GET_Confirm_t GetConfirmCallback = NULL;
-IEEE_802_15_4_PHY_Enum_t GetConfirmation = IDLE;
-
-PLME_SET_TRX_STATE_Request_t SetTrxStateRequestChipSpecificCallback = NULL;
-PLME_SET_TRX_STATE_Confirm_t SetTrxStateConfirmCallback = NULL;
-IEEE_802_15_4_PHY_Enum_t SetTrxStateConfirmation = IDLE;
-
-void (*SetPhyChannelCallback)(uint8_t) = NULL;
-void (*SetSupportedChannelsCallback)(uint32_t) = NULL;
-void (*SetTransmitPowerCallback)(uint8_t) = NULL;
-void (*SetCCAModeCallback)(uint8_t) = NULL;
-
-PLME_SET_Request_t SetRequestChipSpecificCallback = NULL;
-PLME_SET_Confirm_t SetConfirmCallback = NULL;
-IEEE_802_15_4_PHY_Enum_t SetConfirmation = IDLE;
-
-IEEE_802_15_4_PHY_Enum_t (*GetTranceiverState)(void) = NULL;
 
 /*!<
  *!< @brief PHY internal operating state of the transceiver
@@ -522,141 +493,6 @@ void IEEE_802_15_4_PhyInit(void)
     phyMain.PLME_SAP.SET.Confirm   = IEEE_802_15_4_SET_Confirm;
 
 }
-
-/****************************************************************************************
- *!< Function                : IEEE_802_15_4_BindService
- *!< @brief                  :
- *!< Parameters              :
- *!<                   Input : -
- *!<                   Output: -
- *!< Return                  : -
- *!< Critical section YES/NO : NO
- */
-void IEEE_802_15_4_BindService(IEEE_802_15_4_ServiceAccessPoint_t serviceId, IEEE_802_15_4_Service_t serviceType, void (*func)(void*))
-{
-    if (func != NULL)
-    {
-
-        switch (serviceId)
-        {
-            case PD_DATA:
-
-                switch (serviceType)
-                {
-                    case enRequest:
-                        DataRequestChipSpecificCallback = (voidFuncPtr)func;
-                        break;
-
-                    case enConfirm:
-                        DataConfirmationCallback = (PD_Data_Confirm_t)func;
-                        break;
-
-                    case enIndication:
-                        DataIndicationCallback = (PD_Data_Indication_t)func;
-                        break;
-
-                    default:
-                        break;
-                }
-                break;
-
-            case PLME_CCA:
-
-                switch (serviceType)
-                {
-                    case enRequest:
-                        CcaRequestChipSpecificCallback = (PLME_CCA_Request_t)func;
-                        break;
-
-                    case enConfirm:
-                        CcaConfirmCallback = (PLME_CCA_Confirm_t)func;
-                        break;
-
-                    default:
-                        break;
-                }
-                break;
-
-            case PLME_ED:
-
-                switch (serviceType)
-                {
-                    case enRequest:
-                        EdRequestChipSpecificCallback = (PLME_ED_Request_t)func;
-                        break;
-
-                    case enConfirm:
-                        EdConfirmCallback = (PLME_ED_Confirm_t)func;
-                        break;
-
-                    default:
-                        break;
-                }
-                break;
-
-            case PLME_GET:
-
-                switch (serviceType)
-                {
-                    case enRequest:
-                        GetRequestChipSpecificCallback = (PLME_GET_Request_t)func;
-                        break;
-
-                    case enConfirm:
-                        GetConfirmCallback = (PLME_GET_Confirm_t)func;
-                        break;
-
-                    default:
-                        break;
-                }
-                break;
-
-            case PLME_SET_TRX_STATE:
-
-                switch (serviceType)
-                {
-                    case enRequest:
-                        SetTrxStateRequestChipSpecificCallback = (PLME_SET_TRX_STATE_Request_t)func;
-                        break;
-
-                    case enConfirm:
-                        SetTrxStateConfirmCallback = (PLME_SET_TRX_STATE_Confirm_t)func;
-                        break;
-
-                    default:
-                        break;
-                }
-                break;
-
-            case PLME_SET:
-
-                switch (serviceType)
-                {
-                    case enRequest:
-                        SetRequestChipSpecificCallback = (PLME_SET_Request_t)func;
-                        break;
-
-                    case enConfirm:
-                        SetConfirmCallback = (PLME_SET_Confirm_t)func;
-                        break;
-
-                    default:
-                        break;
-                }
-                break;
-
-            default:
-            break;
-        }
-
-    }
-    else
-    {
-
-    }
-
-}
-
 
 
 /****************************************************************************************

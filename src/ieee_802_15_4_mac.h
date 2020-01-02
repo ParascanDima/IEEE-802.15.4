@@ -398,7 +398,7 @@ typedef struct
     /* ===================== MAC PAYLOAD ===================== */
     IEEE_802_15_4_BeaconSuperFrameSpec_t superFrameSpec;
     IEEE_802_15_4_GTS_t                  gtsFields;
-    IEEE_802_15_4_PendAddr_t                 pendingAddr;
+    IEEE_802_15_4_PendAddr_t             pendingAddr;
 
     /* ========================= MFR ========================= */
     uint16_t    fcs;
