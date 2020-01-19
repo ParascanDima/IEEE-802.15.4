@@ -115,9 +115,10 @@ static uint8_t ACLSecurityMaterial[ACLSecurityMaterialLengthMax] = "";
 static uint8_t ACLSecuritySuite = (uint8_t)0x00;
 
 /*!<
- *!< @brief MAC interfaces to upper layers
+ *!< @brief Non standard attributes
  *!< */
-
+MacToPhyRequestStatus phyCCARequestStatus = REQUEST_IDLE;
+IEEE_802_15_4_PHY_Enum_t phyCCAStatus = CHANNEL_BUSY;
 
 
 /**************Public Variable Definitions***************/
@@ -379,6 +380,37 @@ static void IEEE_802_15_4_RemovePendingTransaction(uint8_t msduHandle)
     }
 }
 
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacCcaRequest
+ *!< @brief                  :
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input :
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  :
+ *!< Critical section YES/NO : NO
+ */
+MacToPhyRequestStatus IEEE_802_15_4_MacCcaRequest(void)
+{
+    MacToPhyRequestStatus retValue = REQUEST_BUSY;
+
+    retValue = phyCCARequestStatus;
+    if (retValue == REQUEST_IDLE)
+    {
+        phyCCARequestStatus = REQUEST_BUSY;
+        phyMain.PLME_SAP.CCA.Request();
+    }
+    else if (retValue == REQUEST_READY)
+    {
+        phyCCARequestStatus = REQUEST_IDLE;
+    }
+
+    return retValue;
+}
+
+
 /**************Public Function Definitions***************/
 
 /* Interfaces to PHY layer */
@@ -554,7 +586,8 @@ void IEEE_802_15_4_ToMacFrameIndication(uint8_t psduLength, uint8_t* psdu, uint8
  */
 void IEEE_802_15_4_ToMacCcaConfirmation(IEEE_802_15_4_PHY_Enum_t status)
 {
-
+    phyCCARequestStatus = REQUEST_READY;
+    phyCCAStatus = status;
 }
 
 

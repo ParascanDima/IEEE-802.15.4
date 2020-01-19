@@ -133,9 +133,6 @@
 
 /*!<
  *!< @brief
- *!<
- *!<
- *!<
  *!< */
 typedef enum
 {
@@ -166,6 +163,15 @@ typedef enum
     PAN_ACCESS_DENIED
 }GeneralMacRequestStatusType;
 
+/*!<
+ *!< @brief Defines the response status
+ *!< */
+typedef enum
+{
+    REQUEST_READY = 0,
+    REQUEST_BUSY,
+    REQUEST_IDLE
+}MacToPhyRequestStatus;
 
 /*!<
  *!< @brief Elements of PANDescriptor (per IEEE Std 802.15.4-2003 Table 41 )
