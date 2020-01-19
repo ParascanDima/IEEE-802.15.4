@@ -170,8 +170,18 @@ typedef enum
 {
     REQUEST_READY = 0,
     REQUEST_BUSY,
-    REQUEST_IDLE
+    REQUEST_IDLE,
+    REQUEST_ERROR
 }MacToPhyRequestStatus;
+
+/*!<
+ *!< @brief Defines the measurement type
+ *!< */
+typedef enum
+{
+    REQUEST_CCA = 0,
+    REQUEST_ED,
+}MacToPhyRequestMeasurement;
 
 /*!<
  *!< @brief Elements of PANDescriptor (per IEEE Std 802.15.4-2003 Table 41 )

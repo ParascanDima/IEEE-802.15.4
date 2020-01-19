@@ -446,6 +446,13 @@ typedef struct
 
 /***************************Public Data Definitions********************************/
 
+extern IEEE_802_15_4_PHY_Enum_t DataConfirmation;
+extern IEEE_802_15_4_PHY_Enum_t CcaConfirmation;
+extern IEEE_802_15_4_PHY_Enum_t EdConfirmation;
+extern IEEE_802_15_4_PHY_Enum_t GetConfirmation;
+extern IEEE_802_15_4_PHY_Enum_t SetTrxStateConfirmation;
+extern IEEE_802_15_4_PHY_Enum_t SetConfirmation;
+
 extern IEEE_802_15_4_PHY_t phyMain;
 
 

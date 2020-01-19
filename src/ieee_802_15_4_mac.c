@@ -117,8 +117,16 @@ static uint8_t ACLSecuritySuite = (uint8_t)0x00;
 /*!<
  *!< @brief Non standard attributes
  *!< */
-MacToPhyRequestStatus phyCCARequestStatus = REQUEST_IDLE;
-IEEE_802_15_4_PHY_Enum_t phyCCAStatus = CHANNEL_BUSY;
+static MacToPhyRequestStatus phyCCARequestStatus = REQUEST_IDLE;
+static MacToPhyRequestStatus phyEdRequestStatus = REQUEST_IDLE;
+static MacToPhyRequestStatus phyGetRequestStatus = REQUEST_IDLE;
+static MacToPhyRequestStatus phySetRequestStatus = REQUEST_IDLE;
+static MacToPhyRequestStatus phySetTRXRequestStatus = REQUEST_IDLE;
+
+static IEEE_802_15_4_PIB_ID_t PhyRequestedPibAttribId;
+
+static uint32_t phyResponseValue;
+
 
 
 /**************Public Variable Definitions***************/
@@ -392,19 +400,69 @@ static void IEEE_802_15_4_RemovePendingTransaction(uint8_t msduHandle)
  *!< Return                  :
  *!< Critical section YES/NO : NO
  */
-MacToPhyRequestStatus IEEE_802_15_4_MacCcaRequest(void)
+MacToPhyRequestStatus IEEE_802_15_4_MacCcaRequest(MacToPhyRequestMeasurement meas)
 {
     MacToPhyRequestStatus retValue = REQUEST_BUSY;
 
-    retValue = phyCCARequestStatus;
-    if (retValue == REQUEST_IDLE)
-    {
-        phyCCARequestStatus = REQUEST_BUSY;
-        phyMain.PLME_SAP.CCA.Request();
+    switch (meas) {
+        case REQUEST_CCA:
+            retValue = phyCCARequestStatus;
+            if (retValue == REQUEST_IDLE)
+            {
+                phyCCARequestStatus = REQUEST_BUSY;
+                phyMain.PLME_SAP.CCA.Request();
+            }
+            else if (retValue == REQUEST_READY)
+            {
+                phyCCARequestStatus = REQUEST_IDLE;
+            }
+            break;
+        case REQUEST_ED:
+            retValue = phyEdRequestStatus;
+            if (retValue == REQUEST_IDLE)
+            {
+                phyEdRequestStatus = REQUEST_BUSY;
+                phyMain.PLME_SAP.ED.Request();
+            }
+            else if (retValue == REQUEST_READY)
+            {
+                phyEdRequestStatus = REQUEST_IDLE;
+            }
+            break;
+        default:
+            break;
     }
-    else if (retValue == REQUEST_READY)
+
+    return retValue;
+}
+
+
+/****************************************************************************************
+ *!< Function                : IEEE_802_15_4_MacGetRequest
+ *!< @brief                  :
+ *!<                         :
+ *!< Parameters              :
+ *!<                   Input :
+ *!<                         :
+ *!<                   Output: -
+ *!< Return                  :
+ *!< Critical section YES/NO : NO
+ */
+MacToPhyRequestStatus IEEE_802_15_4_MacGetPhyRequest(IEEE_802_15_4_PIB_ID_t PibAttribId, uint32_t* PibAttribValue)
+{
+    MacToPhyRequestStatus retValue = REQUEST_BUSY;
+
+    if (phyGetRequestStatus == REQUEST_IDLE)
     {
-        phyCCARequestStatus = REQUEST_IDLE;
+        PhyRequestedPibAttribId = PibAttribId;
+        phyGetRequestStatus = REQUEST_BUSY;
+        phyMain.PLME_SAP.GET.Request(PibAttribId);
+    }
+    else if (phyGetRequestStatus == REQUEST_READY)
+    {
+        retValue = REQUEST_READY;
+        phyGetRequestStatus = REQUEST_IDLE;
+        *PibAttribValue = phyResponseValue;
     }
 
     return retValue;
@@ -552,7 +610,7 @@ void IEEE_802_15_4_ToMacFrameIndication(uint8_t psduLength, uint8_t* psdu, uint8
                                                   &locDataFrame.srcPANID,
                                                   &locDataFrame.dstAddr,
                                                   &locDataFrame.srcAddr);
-        /* Now the meta data parsing finished, time to indicate upper layer (MAC) of incomming data */
+        /* Now the meta data parsing finished, time to indicate upper layer (MAC) of incoming data */
         IEEE_802_15_4_MacDataIndication(locDataFrame.frameControl.Field.srcAddrMode,
                                         locDataFrame.srcPANID,
                                         locDataFrame.srcAddr,
@@ -587,7 +645,7 @@ void IEEE_802_15_4_ToMacFrameIndication(uint8_t psduLength, uint8_t* psdu, uint8
 void IEEE_802_15_4_ToMacCcaConfirmation(IEEE_802_15_4_PHY_Enum_t status)
 {
     phyCCARequestStatus = REQUEST_READY;
-    phyCCAStatus = status;
+    phyResponseValue = (uint32_t)status;
 }
 
 
@@ -605,7 +663,16 @@ void IEEE_802_15_4_ToMacCcaConfirmation(IEEE_802_15_4_PHY_Enum_t status)
  */
 void IEEE_802_15_4_ToMacEdConfirmation(IEEE_802_15_4_PHY_Enum_t status, uint8_t* EnergyLevel)
 {
-
+    if (status == TRX_OFF || status == TX_ON)
+    {
+        phyEdRequestStatus = REQUEST_ERROR;
+        phyResponseValue = (uint32_t)0;
+    }
+    else
+    {
+        phyEdRequestStatus = REQUEST_READY;
+        phyResponseValue = (uint32_t)*EnergyLevel;
+    }
 }
 
 
@@ -623,7 +690,15 @@ void IEEE_802_15_4_ToMacEdConfirmation(IEEE_802_15_4_PHY_Enum_t status, uint8_t*
  */
 void IEEE_802_15_4_ToMacGetConfirmation(IEEE_802_15_4_PHY_Enum_t status, IEEE_802_15_4_PIB_ID_t PIBAttribID, uint8_t* PIBAttributeValue)
 {
-
+    if (status != UNSUPPORTED_ATTRIBUTE)
+    {
+        phyGetRequestStatus = REQUEST_READY;
+        phyResponseValue = *(uint32*)PIBAttributeValue;
+    }
+    else
+    {
+        phyGetRequestStatus = REQUEST_ERROR;
+    }
 }
 
 
